@@ -2,10 +2,11 @@ import math
 import copy
 
 class Node:
-    def __init__(self, paramClass):
+    def __init__(self, paramClass, parentClassValue):
         self.children = {}
         self.decisions = {}
         self.paramClass = paramClass
+        self.parentClassValue = parentClassValue
     
     def addChild(self, value, node):
         self.children[value] = node
@@ -63,6 +64,17 @@ def getValuesLeavesExpandFromBestClass(bestFittingClass : dict):
             expand.append(value)
     return leaves, expand
 
+def renderNodes(node : Node, indent : int):
+
+    spacing = "  " * (indent - 1) + f"Check ({node.parentClassValue}) -> " if node.parentClassValue else "↳ "
+    print(spacing + node.paramClass)
+    
+    for classValue, result in node.decisions.items():
+        print("  " * (indent) + f"If {node.paramClass}={classValue} then play={result}")
+
+    for value, childNode in node.children.items():
+        renderNodes(childNode, indent + 1)
+
 practicalDataset = [{"shape":"cylinder","color":"orange","volume":25,"sick":"no"},
            {"shape":"cylinder","color":"black","volume":25,"sick":"no"},
            {"shape":"coupe","color":"white","volume":10,"sick":"no"},
@@ -96,7 +108,7 @@ dataset = [
 classToCheck = "play"
 classToCheckValues = getPossibleClassValuesFromDataset(classToCheck, dataset)
 
-nodes = {"root":Node("root")}
+nodes = {"root":Node("root","")}
 rootNode = nodes["root"]
 
 #pathsToCheck = [{"node":"shape","path":[{"shape":"cylinder"}]}]
@@ -129,15 +141,13 @@ while len(pathsToCheck) > 0:
         if classInformationGain > bestFittingClass["infoGain"]:
             bestFittingClass = {"class":dClass,"infoGain":classInformationGain,"entropys":classEntropys}
 
-    nodes[bestFittingClass["class"]] = Node(bestFittingClass["class"])
+    nodes[bestFittingClass["class"]] = Node(bestFittingClass["class"], nodePathValue)
     newNode = nodes[bestFittingClass["class"]]
     rootNode.addChild(nodePathValue, newNode)
 
     if bestFittingClass["class"] not in previousNodes:
-        print(bestFittingClass["class"])
         classValueLeaves, classValuesToExpand = getValuesLeavesExpandFromBestClass(bestFittingClass)
         for classValueLeaf in classValueLeaves:
-            print(classValueLeaf)
             newNode.addDecision(classValueLeaf["value"], classValueLeaf["result"])
         
         for classValueToExpand in classValuesToExpand:
@@ -147,6 +157,5 @@ while len(pathsToCheck) > 0:
             pathsToCheck.append(pathToAdd)
         previousNodes.append(bestFittingClass["class"])
 
-for node, nodeClass in nodes.items():
-    print(nodeClass.children)
+renderNodes(nodes["root"],1)
 
