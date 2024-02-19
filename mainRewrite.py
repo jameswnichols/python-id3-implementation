@@ -13,6 +13,13 @@ class Node:
     def addDecision(self, classValue, result):
         self.decisions [classValue] = result
 
+def calculateEntropyFromDataset(parameter : str, dataset : list[dict]):
+  probabilities = {}
+  paramValues = [row[parameter] for row in dataset]
+  for x in set(paramValues):
+    probabilities[x] = paramValues.count(x)/len(paramValues)
+  return -sum([prob * math.log2(prob) for x, prob in probabilities.items()]), len(paramValues)
+
 def filterDataset(dataset : list[dict], path : dict):
     pathKey, pathValue = list(path.items())[0]
     newDataset = []
@@ -49,6 +56,12 @@ while len(pathsToCheck) > 0:
     #Filter Dataset Down
     for path in pathToCheck["path"]:
         currentDataset = filterDataset(currentDataset, path)
+    
+    mainClassCheckEntropy = calculateEntropyFromDataset(classToCheck, currentDataset)
+    
+    classesToCheck = [x for x in list(currentDataset[0].keys()) if x != classToCheck]
+
+    print(classesToCheck)
     
 
 
