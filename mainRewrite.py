@@ -156,64 +156,6 @@ dataset = [
     {"Outlook":"Rainy","Temperature":"Mild","Humidity":"High","Windy":"True","Play":"No"}
 ]
 
-
-
-# for row in dataset:
-#     print(f'{row["color"]};{row["volume"]};{row["sick"]};{row["shape"]}')
-
-# classToCheck = "Play"
-# classToCheckValues = getPossibleClassValuesFromDataset(classToCheck, dataset)
-
-# nodes = {"Root":Node("Root","")}
-# rootNode = nodes["Root"]
-
-# #pathsToCheck = [{"node":"shape","path":[{"shape":"cylinder"}]}]
-# pathsToCheck = [{"node":"Root","path":[]}]
-# previousNodes = []
-
-# while len(pathsToCheck) > 0:
-#     pathToCheck = pathsToCheck.pop(0)
-
-#     currentDataset = copy.deepcopy(dataset)
-#     rootNode = nodes[pathToCheck["node"]]
-
-#     canContinue = True
-
-#     nodePathValue = ""
-
-#     #Filter Dataset Down
-#     for path in pathToCheck["path"]:
-#         currentDataset = filterDataset(currentDataset, path)
-#         nodePathValue = list(path.values())[0]
-    
-#     mainClassCheckEntropy = calculateEntropyFromDataset(classToCheck, currentDataset)
-#     classesToCheck = [x for x in list(currentDataset[0].keys()) if x != classToCheck]
-
-#     bestFittingClass = {"class":"NaN","infoGain":-100.0}
-#     for dClass in classesToCheck:
-        
-#         classEntropys = calculateClassValueEntropyFromDataset(dClass, currentDataset, classToCheck, classToCheckValues)
-#         classInformationGain = calculateClassInformationGainFromDataset(classEntropys, dataset, mainClassCheckEntropy)
-#         if classInformationGain > bestFittingClass["infoGain"]:
-#             bestFittingClass = {"class":dClass,"infoGain":classInformationGain,"entropys":classEntropys}
-
-#     nodes[bestFittingClass["class"]] = Node(bestFittingClass["class"], nodePathValue)
-#     newNode = nodes[bestFittingClass["class"]]
-#     newNode.parentClass = rootNode.paramClass
-#     rootNode.addChild(nodePathValue, newNode)
-
-#     if bestFittingClass["class"] not in previousNodes:
-#         classValueLeaves, classValuesToExpand = getValuesLeavesExpandFromBestClass(bestFittingClass)
-#         for classValueLeaf in classValueLeaves:
-#             newNode.addDecision(classValueLeaf["value"], classValueLeaf["result"])
-        
-#         for classValueToExpand in classValuesToExpand:
-#             pathToAdd = copy.deepcopy(pathToCheck)
-#             pathToAdd["path"].append({bestFittingClass["class"]:classValueToExpand})
-#             pathToAdd["node"] = bestFittingClass["class"]
-#             pathsToCheck.append(pathToAdd)
-#         previousNodes.append(bestFittingClass["class"])
-
 nodes = getNodesFromDataset(practicalDataset, "sick")
 
 renderNodes(nodes["Root"],1)
