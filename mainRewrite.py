@@ -60,8 +60,7 @@ def getValuesLeavesExpandFromBestClass(bestFittingClass : dict):
         if entropyData["entropy"] == 0.0:
             entropyResultValue = [rK for rK, rV in entropyData["results"].items() if rV > 0][0]
             leaves.append({"value":value,"result":entropyResultValue})
-            previousResult = entropyResultValue
-            
+            # previousResult = entropyResultValue
             # if previousResult == "NaN" or previousResult == entropyResultValue:
                 
             # else:
@@ -79,6 +78,9 @@ dataset = [{"shape":"cylinder","color":"orange","volume":25,"sick":"no"},
            {"shape":"coupe","color":"orange","volume":15,"sick":"yes"},
            {"shape":"coupe","color":"orange","volume":10,"sick":"yes"},
            ]
+
+# for row in dataset:
+#     print(f'{row["color"]};{row["volume"]};{row["sick"]};{row["shape"]}')
 
 classToCheck = "sick"
 classToCheckValues = getPossibleClassValuesFromDataset(classToCheck, dataset)
@@ -100,13 +102,13 @@ while len(pathsToCheck) > 0:
 
     #Filter Dataset Down
     for path in pathToCheck["path"]:
+
         currentDataset = filterDataset(currentDataset, path)
     
     mainClassCheckEntropy = calculateEntropyFromDataset(classToCheck, currentDataset)
     classesToCheck = [x for x in list(currentDataset[0].keys()) if x != classToCheck]
 
     bestFittingClass = {"class":"NaN","infoGain":-100.0}
-
     for dClass in classesToCheck:
         
         classEntropys = calculateClassValueEntropyFromDataset(dClass, currentDataset, classToCheck, classToCheckValues)
@@ -117,7 +119,7 @@ while len(pathsToCheck) > 0:
     nodes[bestFittingClass["class"]] = Node(bestFittingClass["class"])
     newNode = nodes[bestFittingClass["class"]]
     rootNode.addChild(newNode)
-    
+
     if bestFittingClass["class"] not in previousNodes:
         print(bestFittingClass["class"])
         classValueLeaves, classValuesToExpand = getValuesLeavesExpandFromBestClass(bestFittingClass)
@@ -126,10 +128,10 @@ while len(pathsToCheck) > 0:
             newNode.addDecision(classValueLeaf["value"], classValueLeaf["result"])
         
         for classValueToExpand in classValuesToExpand:
-            pathToAdd = copy.deepcopy(pathsToCheck)
-            print(pathToAdd)
-            pathToAdd.append({bestFittingClass["class"]:classValueToExpand})
-            pathsToCheck.append({"node":bestFittingClass["class"],"path":pathToAdd})
+            pathToAdd = copy.deepcopy(pathToCheck)
+            pathToAdd["path"].append({bestFittingClass["class"]:classValueToExpand})
+            pathToAdd["node"] = bestFittingClass["class"]
+            pathsToCheck.append(pathToAdd)
 
         rootNode = newNode
 
