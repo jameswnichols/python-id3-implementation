@@ -3,12 +3,12 @@ import copy
 
 class Node:
     def __init__(self, paramClass):
-        self.children = []
+        self.children = {}
         self.decisions = {}
         self.paramClass = paramClass
     
-    def addChild(self,  node):
-        self.children.append(node)
+    def addChild(self, value, node):
+        self.children[value] = node
 
     def addDecision(self, classValue, result):
         self.decisions [classValue] = result
@@ -107,14 +107,16 @@ while len(pathsToCheck) > 0:
     pathToCheck = pathsToCheck.pop(0)
 
     currentDataset = copy.deepcopy(dataset)
-    currentNode = nodes[pathToCheck["node"]]
+    rootNode = nodes[pathToCheck["node"]]
 
     canContinue = True
 
+    nodePathValue = ""
+
     #Filter Dataset Down
     for path in pathToCheck["path"]:
-
         currentDataset = filterDataset(currentDataset, path)
+        nodePathValue = list(path.values())[0]
     
     mainClassCheckEntropy = calculateEntropyFromDataset(classToCheck, currentDataset)
     classesToCheck = [x for x in list(currentDataset[0].keys()) if x != classToCheck]
@@ -129,7 +131,7 @@ while len(pathsToCheck) > 0:
 
     nodes[bestFittingClass["class"]] = Node(bestFittingClass["class"])
     newNode = nodes[bestFittingClass["class"]]
-    rootNode.addChild(newNode)
+    rootNode.addChild(nodePathValue, newNode)
 
     if bestFittingClass["class"] not in previousNodes:
         print(bestFittingClass["class"])
@@ -143,9 +145,6 @@ while len(pathsToCheck) > 0:
             pathToAdd["path"].append({bestFittingClass["class"]:classValueToExpand})
             pathToAdd["node"] = bestFittingClass["class"]
             pathsToCheck.append(pathToAdd)
-
-        rootNode = newNode
-
         previousNodes.append(bestFittingClass["class"])
 
 for node, nodeClass in nodes.items():
