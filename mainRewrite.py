@@ -7,7 +7,7 @@ class Node:
         self.decisions = {}
         self.paramClass = paramClass
     
-    def addChild(self, node):
+    def addChild(self,  node):
         self.children.append(node)
 
     def addDecision(self, classValue, result):
@@ -63,7 +63,7 @@ def getValuesLeavesExpandFromBestClass(bestFittingClass : dict):
             expand.append(value)
     return leaves, expand
 
-dataset = [{"shape":"cylinder","color":"orange","volume":25,"sick":"no"},
+practicalDataset = [{"shape":"cylinder","color":"orange","volume":25,"sick":"no"},
            {"shape":"cylinder","color":"black","volume":25,"sick":"no"},
            {"shape":"coupe","color":"white","volume":10,"sick":"no"},
            {"shape":"trapezoid","color":"green","volume":15,"sick":"no"},
@@ -73,10 +73,27 @@ dataset = [{"shape":"cylinder","color":"orange","volume":25,"sick":"no"},
            {"shape":"coupe","color":"orange","volume":10,"sick":"yes"},
            ]
 
+dataset = [
+    {"outlook":"Sunny","temperature":"Hot","humidity":"High","windy":"False","play":"No"},
+    {"outlook":"Sunny","temperature":"Hot","humidity":"High","windy":"True","play":"No"},
+    {"outlook":"Overcast","temperature":"Hot","humidity":"High","windy":"False","play":"Yes"},
+    {"outlook":"Rainy","temperature":"Mild","humidity":"High","windy":"False","play":"Yes"},
+    {"outlook":"Rainy","temperature":"Cool","humidity":"Normal","windy":"False","play":"Yes"},
+    {"outlook":"Rainy","temperature":"Cool","humidity":"Normal","windy":"True","play":"No"},
+    {"outlook":"Overcast","temperature":"Cool","humidity":"Normal","windy":"True","play":"Yes"},
+    {"outlook":"Sunny","temperature":"Mild","humidity":"High","windy":"False","play":"No"},
+    {"outlook":"Sunny","temperature":"Cool","humidity":"Normal","windy":"False","play":"Yes"},
+    {"outlook":"Rainy","temperature":"Mild","humidity":"Normal","windy":"False","play":"Yes"},
+    {"outlook":"Sunny","temperature":"Mild","humidity":"Normal","windy":"True","play":"Yes"},
+    {"outlook":"Overcast","temperature":"Mild","humidity":"High","windy":"True","play":"Yes"},
+    {"outlook":"Overcast","temperature":"Hot","humidity":"Normal","windy":"False","play":"Yes"},
+    {"outlook":"Rainy","temperature":"Mild","humidity":"High","windy":"True","play":"No"}
+]
+
 # for row in dataset:
 #     print(f'{row["color"]};{row["volume"]};{row["sick"]};{row["shape"]}')
 
-classToCheck = "sick"
+classToCheck = "play"
 classToCheckValues = getPossibleClassValuesFromDataset(classToCheck, dataset)
 
 nodes = {"root":Node("root")}
@@ -130,5 +147,7 @@ while len(pathsToCheck) > 0:
         rootNode = newNode
 
         previousNodes.append(bestFittingClass["class"])
-    
+
+for node, nodeClass in nodes.items():
+    print(nodeClass.children)
 
