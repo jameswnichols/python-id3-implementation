@@ -129,6 +129,20 @@ def getNodesFromDataset(dataset : list[dict], classToCheck : str):
             previousNodes.append(bestFittingClass["class"])
     return nodes
 
+def extractDatasetFromCSV(filename):
+    dataset = []
+    fileData = None
+    classes = []
+    with open(filename, "r") as f:
+        fileData = f.readlines()
+    classes = fileData[0].strip().split(",")
+    for line in fileData[1:]:
+        lineData = {}
+        for i, value in line.strip().split(","):
+            lineData[classes[i]] = value
+        dataset.append(lineData)
+    return dataset
+
 practicalDataset = [{"shape":"cylinder","color":"orange","volume":25,"sick":"no"},
            {"shape":"cylinder","color":"black","volume":25,"sick":"no"},
            {"shape":"coupe","color":"white","volume":10,"sick":"no"},
@@ -156,7 +170,9 @@ dataset = [
     {"Outlook":"Rainy","Temperature":"Mild","Humidity":"High","Windy":"True","Play":"No"}
 ]
 
-nodes = getNodesFromDataset(practicalDataset, "sick")
+extractDatasetFromCSV("courseworkDataset.csv")
+
+nodes = getNodesFromDataset(dataset, "Play")
 
 renderNodes(nodes["Root"],1)
 
