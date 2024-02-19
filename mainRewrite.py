@@ -7,6 +7,7 @@ class Node:
         self.decisions = {}
         self.paramClass = paramClass
         self.parentClassValue = parentClassValue
+        self.parentClass = ""
     
     def addChild(self, value, node):
         self.children[value] = node
@@ -66,11 +67,11 @@ def getValuesLeavesExpandFromBestClass(bestFittingClass : dict):
 
 def renderNodes(node : Node, indent : int):
 
-    spacing = "  " * (indent - 1) + f"Check ({node.parentClassValue}) -> " if node.parentClassValue else "↳ "
+    spacing = "  " * (indent - 1) + f"If {node.parentClass} = {node.parentClassValue}; check " if node.parentClassValue else "↳ "
     print(spacing + node.paramClass)
     
     for classValue, result in node.decisions.items():
-        print("  " * (indent) + f"If {node.paramClass}={classValue} then play={result}")
+        print("  " * (indent) + f"↳ If {node.paramClass} = {classValue}; Play = {result}")
 
     for value, childNode in node.children.items():
         renderNodes(childNode, indent + 1)
@@ -86,33 +87,33 @@ practicalDataset = [{"shape":"cylinder","color":"orange","volume":25,"sick":"no"
            ]
 
 dataset = [
-    {"outlook":"Sunny","temperature":"Hot","humidity":"High","windy":"False","play":"No"},
-    {"outlook":"Sunny","temperature":"Hot","humidity":"High","windy":"True","play":"No"},
-    {"outlook":"Overcast","temperature":"Hot","humidity":"High","windy":"False","play":"Yes"},
-    {"outlook":"Rainy","temperature":"Mild","humidity":"High","windy":"False","play":"Yes"},
-    {"outlook":"Rainy","temperature":"Cool","humidity":"Normal","windy":"False","play":"Yes"},
-    {"outlook":"Rainy","temperature":"Cool","humidity":"Normal","windy":"True","play":"No"},
-    {"outlook":"Overcast","temperature":"Cool","humidity":"Normal","windy":"True","play":"Yes"},
-    {"outlook":"Sunny","temperature":"Mild","humidity":"High","windy":"False","play":"No"},
-    {"outlook":"Sunny","temperature":"Cool","humidity":"Normal","windy":"False","play":"Yes"},
-    {"outlook":"Rainy","temperature":"Mild","humidity":"Normal","windy":"False","play":"Yes"},
-    {"outlook":"Sunny","temperature":"Mild","humidity":"Normal","windy":"True","play":"Yes"},
-    {"outlook":"Overcast","temperature":"Mild","humidity":"High","windy":"True","play":"Yes"},
-    {"outlook":"Overcast","temperature":"Hot","humidity":"Normal","windy":"False","play":"Yes"},
-    {"outlook":"Rainy","temperature":"Mild","humidity":"High","windy":"True","play":"No"}
+    {"Outlook":"Sunny","Temperature":"Hot","Humidity":"High","Windy":"False","Play":"No"},
+    {"Outlook":"Sunny","Temperature":"Hot","Humidity":"High","Windy":"True","Play":"No"},
+    {"Outlook":"Overcast","Temperature":"Hot","Humidity":"High","Windy":"False","Play":"Yes"},
+    {"Outlook":"Rainy","Temperature":"Mild","Humidity":"High","Windy":"False","Play":"Yes"},
+    {"Outlook":"Rainy","Temperature":"Cool","Humidity":"Normal","Windy":"False","Play":"Yes"},
+    {"Outlook":"Rainy","Temperature":"Cool","Humidity":"Normal","Windy":"True","Play":"No"},
+    {"Outlook":"Overcast","Temperature":"Cool","Humidity":"Normal","Windy":"True","Play":"Yes"},
+    {"Outlook":"Sunny","Temperature":"Mild","Humidity":"High","Windy":"False","Play":"No"},
+    {"Outlook":"Sunny","Temperature":"Cool","Humidity":"Normal","Windy":"False","Play":"Yes"},
+    {"Outlook":"Rainy","Temperature":"Mild","Humidity":"Normal","Windy":"False","Play":"Yes"},
+    {"Outlook":"Sunny","Temperature":"Mild","Humidity":"Normal","Windy":"True","Play":"Yes"},
+    {"Outlook":"Overcast","Temperature":"Mild","Humidity":"High","Windy":"True","Play":"Yes"},
+    {"Outlook":"Overcast","Temperature":"Hot","Humidity":"Normal","Windy":"False","Play":"Yes"},
+    {"Outlook":"Rainy","Temperature":"Mild","Humidity":"High","Windy":"True","Play":"No"}
 ]
 
 # for row in dataset:
 #     print(f'{row["color"]};{row["volume"]};{row["sick"]};{row["shape"]}')
 
-classToCheck = "play"
+classToCheck = "Play"
 classToCheckValues = getPossibleClassValuesFromDataset(classToCheck, dataset)
 
-nodes = {"root":Node("root","")}
-rootNode = nodes["root"]
+nodes = {"Root":Node("Root","")}
+rootNode = nodes["Root"]
 
 #pathsToCheck = [{"node":"shape","path":[{"shape":"cylinder"}]}]
-pathsToCheck = [{"node":"root","path":[]}]
+pathsToCheck = [{"node":"Root","path":[]}]
 previousNodes = []
 
 while len(pathsToCheck) > 0:
@@ -143,6 +144,7 @@ while len(pathsToCheck) > 0:
 
     nodes[bestFittingClass["class"]] = Node(bestFittingClass["class"], nodePathValue)
     newNode = nodes[bestFittingClass["class"]]
+    newNode.parentClass = rootNode.paramClass
     rootNode.addChild(nodePathValue, newNode)
 
     if bestFittingClass["class"] not in previousNodes:
@@ -157,5 +159,5 @@ while len(pathsToCheck) > 0:
             pathsToCheck.append(pathToAdd)
         previousNodes.append(bestFittingClass["class"])
 
-renderNodes(nodes["root"],1)
+renderNodes(nodes["Root"],1)
 
