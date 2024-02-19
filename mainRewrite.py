@@ -30,7 +30,7 @@ def calculateClassValueEntropyFromDataset(paramClass : str, dataset : list[dict]
         valTotal = sum(crV for crV in list(checkResults.values()))
         valProbs = [crV / valTotal for crV in list(checkResults.values())]
         paramEntropy = -sum([prob * math.log2(prob) if prob else 0 for prob in valProbs])
-        paramEntropys[paramVal] = {"entropy":paramEntropy,"total":valTotal}
+        paramEntropys[paramVal] = {"entropy":paramEntropy,"total":valTotal,"results":checkResults}
     return paramEntropys
 
 def calculateClassInformationGainFromDataset(classEntropys : dict, dataset : list[dict], checkClassEntropy : float):
@@ -52,6 +52,24 @@ def getPossibleClassValuesFromDataset(paramClass : str, dataset : list[dict]):
         possibleClasses.add(row[paramClass])
     return list(possibleClasses)
 
+def getValuesLeavesExpandFromBestClass(bestFittingClass : dict):
+    leaves = []
+    expand = []
+    previousResult = "NaN"
+    for value, entropyData in bestFittingClass["entropys"].items():
+        if entropyData["entropy"] == 0.0:
+            entropyResultValue = [rK for rK, rV in entropyData["results"].items() if rV > 0][0]
+            leaves.append({"value":value,"result":entropyResultValue})
+            previousResult = entropyResultValue
+            
+            # if previousResult == "NaN" or previousResult == entropyResultValue:
+                
+            # else:
+            #     expand.append(value)
+        else:
+            expand.append(value)
+    return leaves, expand
+
 dataset = [{"shape":"cylinder","color":"orange","volume":25,"sick":"no"},
            {"shape":"cylinder","color":"black","volume":25,"sick":"no"},
            {"shape":"coupe","color":"white","volume":10,"sick":"no"},
@@ -70,11 +88,15 @@ rootNode = nodes["root"]
 
 #pathsToCheck = [{"node":"shape","path":[{"shape":"cylinder"}]}]
 pathsToCheck = [{"node":"root","path":[]}]
+previousNodes = []
 
 while len(pathsToCheck) > 0:
     pathToCheck = pathsToCheck.pop(0)
+
     currentDataset = copy.deepcopy(dataset)
     currentNode = nodes[pathToCheck["node"]]
+
+    canContinue = True
 
     #Filter Dataset Down
     for path in pathToCheck["path"]:
@@ -86,11 +108,31 @@ while len(pathsToCheck) > 0:
     bestFittingClass = {"class":"NaN","infoGain":-100.0}
 
     for dClass in classesToCheck:
+        
         classEntropys = calculateClassValueEntropyFromDataset(dClass, currentDataset, classToCheck, classToCheckValues)
         classInformationGain = calculateClassInformationGainFromDataset(classEntropys, dataset, mainClassCheckEntropy)
         if classInformationGain > bestFittingClass["infoGain"]:
             bestFittingClass = {"class":dClass,"infoGain":classInformationGain,"entropys":classEntropys}
-    
-    print(bestFittingClass)
 
+    nodes[bestFittingClass["class"]] = Node(bestFittingClass["class"])
+    newNode = nodes[bestFittingClass["class"]]
+    rootNode.addChild(newNode)
+    
+    if bestFittingClass["class"] not in previousNodes:
+        print(bestFittingClass["class"])
+        classValueLeaves, classValuesToExpand = getValuesLeavesExpandFromBestClass(bestFittingClass)
+        for classValueLeaf in classValueLeaves:
+            print(classValueLeaf)
+            newNode.addDecision(classValueLeaf["value"], classValueLeaf["result"])
+        
+        for classValueToExpand in classValuesToExpand:
+            pathToAdd = copy.deepcopy(pathsToCheck)
+            print(pathToAdd)
+            pathToAdd.append({bestFittingClass["class"]:classValueToExpand})
+            pathsToCheck.append({"node":bestFittingClass["class"],"path":pathToAdd})
+
+        rootNode = newNode
+
+        previousNodes.append(bestFittingClass["class"])
+    
 
