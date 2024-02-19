@@ -33,6 +33,9 @@ def calculateClassValueEntropyFromDataset(paramClass : str, dataset : list[dict]
         paramEntropys[paramVal] = {"entropy":paramEntropy,"total":valTotal}
     return paramEntropys
 
+def calculateClassInformationGainFromDataset(classEntropys : dict, dataset : list[dict], checkClassEntropy : float):
+    return checkClassEntropy - sum([(cEV["total"]/len(dataset)) * cEV["entropy"] for cEV in list(classEntropys.values())])
+
 def filterDataset(dataset : list[dict], path : dict):
     pathKey, pathValue = list(path.items())[0]
     newDataset = []
@@ -80,9 +83,14 @@ while len(pathsToCheck) > 0:
     mainClassCheckEntropy = calculateEntropyFromDataset(classToCheck, currentDataset)
     classesToCheck = [x for x in list(currentDataset[0].keys()) if x != classToCheck]
 
-    for dClass in classesToCheck:
-        calculateClassValueEntropyFromDataset(dClass, currentDataset, classToCheck, classToCheckValues)
+    bestFittingClass = {"class":"NaN","infoGain":-100.0}
 
+    for dClass in classesToCheck:
+        classEntropys = calculateClassValueEntropyFromDataset(dClass, currentDataset, classToCheck, classToCheckValues)
+        classInformationGain = calculateClassInformationGainFromDataset(classEntropys, dataset, mainClassCheckEntropy)
+        if classInformationGain > bestFittingClass["infoGain"]:
+            bestFittingClass = {"class":dClass,"infoGain":classInformationGain,"entropys":classEntropys}
     
+    print(bestFittingClass)
 
 
