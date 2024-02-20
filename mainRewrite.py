@@ -69,13 +69,11 @@ def renderNodes(node : Node, indent : int, checkClassName : str):
 
     childrenCount = len(node.children)
 
-    endText = "" if childrenCount else "- END"
-
-    spacing = "  " * (indent - 1) + f"If {node.parentClass} = {node.parentClassValue}; check {node.paramClass}" if node.parentClassValue else "↳ "
-    print(spacing)
+    spacing = "  " * (indent - 1) + f"If {node.parentClass} = {node.parentClassValue}; check " if node.parentClassValue else "↳ "
+    print(spacing + node.paramClass)
     
     for classValue, result in node.decisions.items():
-        print("  " * (indent) + f"↳ If {node.paramClass} = {classValue}; {checkClassName} = {result} {endText}")
+        print("  " * (indent) + f"↳ If {node.paramClass} = {classValue}; {checkClassName} = {result} - END")
 
     for value, childNode in node.children.items():
         renderNodes(childNode, indent + 1, checkClassName)
@@ -132,7 +130,7 @@ def getNodesFromDataset(dataset : list[dict], classToCheck : str):
                 pathToAdd["path"].append({bestFittingClass["class"]:classValueToExpand})
                 pathToAdd["node"] = bestFittingClass["class"]
                 pathsToCheck.append(pathToAdd)
-            previousNodes.append(bestFittingClass["class"])
+            #previousNodes.append(bestFittingClass["class"])
     return nodes
 
 def extractDatasetFromCSV(filename):
