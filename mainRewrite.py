@@ -18,12 +18,12 @@ class Node:
 def calculateEntropyFromDataset(parameter : str, dataset : list[dict]):
   probabilities = {}
   paramValues = [row[parameter] for row in dataset]
-  for x in set(paramValues):
+  for x in list(dict.fromkeys(paramValues)):
     probabilities[x] = paramValues.count(x)/len(paramValues)
   return -sum([prob * math.log2(prob) for x, prob in probabilities.items()])
 
 def calculateClassValueEntropyFromDataset(paramClass : str, dataset : list[dict], checkClass : str, checkClassValues : list[str]):
-    paramValues = list(set([row[paramClass] for row in dataset]))
+    paramValues = list(dict.fromkeys([row[paramClass] for row in dataset]))
     paramProb = {pV : {cV : 0 for cV in checkClassValues} for pV in paramValues}
     for row in dataset:
         paramProb[row[paramClass]][row[checkClass]] += 1
@@ -49,10 +49,10 @@ def filterDataset(dataset : list[dict], path : dict):
     return newDataset
 
 def getPossibleClassValuesFromDataset(paramClass : str, dataset : list[dict]):
-    possibleClasses = set()
+    possibleClasses = []
     for row in dataset:
-        possibleClasses.add(row[paramClass])
-    return list(possibleClasses)
+        possibleClasses.append(row[paramClass])
+    return list(dict.fromkeys(possibleClasses))
 
 def getValuesLeavesExpandFromBestClass(bestFittingClass : dict):
     leaves = []
@@ -65,16 +65,16 @@ def getValuesLeavesExpandFromBestClass(bestFittingClass : dict):
             expand.append(value)
     return leaves, expand
 
-def renderNodes(node : Node, indent : int):
+def renderNodes(node : Node, indent : int, checkClassName : str):
 
     spacing = "  " * (indent - 1) + f"If {node.parentClass} = {node.parentClassValue}; check " if node.parentClassValue else "↳ "
     print(spacing + node.paramClass)
     
     for classValue, result in node.decisions.items():
-        print("  " * (indent) + f"↳ If {node.paramClass} = {classValue}; Play = {result}")
+        print("  " * (indent) + f"↳ If {node.paramClass} = {classValue}; {checkClassName} = {result}")
 
     for value, childNode in node.children.items():
-        renderNodes(childNode, indent + 1)
+        renderNodes(childNode, indent + 1, checkClassName)
 
 def getNodesFromDataset(dataset : list[dict], classToCheck : str):
     #classToCheck = "Play"
@@ -116,17 +116,18 @@ def getNodesFromDataset(dataset : list[dict], classToCheck : str):
         newNode.parentClass = rootNode.paramClass
         rootNode.addChild(nodePathValue, newNode)
 
+        
+        classValueLeaves, classValuesToExpand = getValuesLeavesExpandFromBestClass(bestFittingClass)
+        for classValueLeaf in classValueLeaves:
+            newNode.addDecision(classValueLeaf["value"], classValueLeaf["result"])
+    
         if bestFittingClass["class"] not in previousNodes:
-            classValueLeaves, classValuesToExpand = getValuesLeavesExpandFromBestClass(bestFittingClass)
-            for classValueLeaf in classValueLeaves:
-                newNode.addDecision(classValueLeaf["value"], classValueLeaf["result"])
-            
             for classValueToExpand in classValuesToExpand:
                 pathToAdd = copy.deepcopy(pathToCheck)
                 pathToAdd["path"].append({bestFittingClass["class"]:classValueToExpand})
                 pathToAdd["node"] = bestFittingClass["class"]
                 pathsToCheck.append(pathToAdd)
-            previousNodes.append(bestFittingClass["class"])
+            #previousNodes.append(bestFittingClass["class"])
     return nodes
 
 def extractDatasetFromCSV(filename):
@@ -138,7 +139,7 @@ def extractDatasetFromCSV(filename):
     classes = fileData[0].strip().split(",")
     for line in fileData[1:]:
         lineData = {}
-        for i, value in line.strip().split(","):
+        for i, value in enumerate(line.strip().split(",")):
             lineData[classes[i]] = value
         dataset.append(lineData)
     return dataset
@@ -170,9 +171,9 @@ dataset = [
     {"Outlook":"Rainy","Temperature":"Mild","Humidity":"High","Windy":"True","Play":"No"}
 ]
 
-extractDatasetFromCSV("courseworkDataset.csv")
+courseworkDataset = extractDatasetFromCSV("courseworkDataset.csv")
 
-nodes = getNodesFromDataset(dataset, "Play")
+nodes = getNodesFromDataset(courseworkDataset, "quality")
 
-renderNodes(nodes["Root"],1)
+renderNodes(nodes["Root"],1,"quality")
 
