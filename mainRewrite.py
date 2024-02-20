@@ -67,11 +67,15 @@ def getValuesLeavesExpandFromBestClass(bestFittingClass : dict):
 
 def renderNodes(node : Node, indent : int, checkClassName : str):
 
-    spacing = "  " * (indent - 1) + f"If {node.parentClass} = {node.parentClassValue}; check " if node.parentClassValue else "↳ "
-    print(spacing + node.paramClass)
+    childrenCount = len(node.children)
+
+    endText = "" if childrenCount else "- END"
+
+    spacing = "  " * (indent - 1) + f"If {node.parentClass} = {node.parentClassValue}; check {node.paramClass}" if node.parentClassValue else "↳ "
+    print(spacing)
     
     for classValue, result in node.decisions.items():
-        print("  " * (indent) + f"↳ If {node.paramClass} = {classValue}; {checkClassName} = {result}")
+        print("  " * (indent) + f"↳ If {node.paramClass} = {classValue}; {checkClassName} = {result} {endText}")
 
     for value, childNode in node.children.items():
         renderNodes(childNode, indent + 1, checkClassName)
@@ -116,18 +120,19 @@ def getNodesFromDataset(dataset : list[dict], classToCheck : str):
         newNode.parentClass = rootNode.paramClass
         rootNode.addChild(nodePathValue, newNode)
 
-        
         classValueLeaves, classValuesToExpand = getValuesLeavesExpandFromBestClass(bestFittingClass)
         for classValueLeaf in classValueLeaves:
             newNode.addDecision(classValueLeaf["value"], classValueLeaf["result"])
-    
+            
+
         if bestFittingClass["class"] not in previousNodes:
+            
             for classValueToExpand in classValuesToExpand:
                 pathToAdd = copy.deepcopy(pathToCheck)
                 pathToAdd["path"].append({bestFittingClass["class"]:classValueToExpand})
                 pathToAdd["node"] = bestFittingClass["class"]
                 pathsToCheck.append(pathToAdd)
-            #previousNodes.append(bestFittingClass["class"])
+            previousNodes.append(bestFittingClass["class"])
     return nodes
 
 def extractDatasetFromCSV(filename):
