@@ -66,16 +66,11 @@ def getValuesLeavesExpandFromBestClass(bestFittingClass : dict):
     return leaves, expand
 
 def renderNodes(node : Node, indent : int, checkClassName : str):
-
-    childrenCount = len(node.children)
-
     spacing = "  " * (indent - 1) + f"If {node.parentClass} = {node.parentClassValue}; check " if node.parentClassValue else "↳ "
     print(spacing + node.paramClass)
-    
     for classValue, result in node.decisions.items():
         print("  " * (indent) + f"↳ If {node.paramClass} = {classValue}; {checkClassName} = {result} - END")
-
-    for value, childNode in node.children.items():
+    for _, childNode in node.children.items():
         renderNodes(childNode, indent + 1, checkClassName)
 
 def getNodesFromDataset(dataset : list[dict], classToCheck : str):
