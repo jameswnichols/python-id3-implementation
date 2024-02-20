@@ -1,5 +1,6 @@
 import math
 import copy
+import pickle
 
 class Node:
     def __init__(self, paramClass, parentClassValue):
@@ -169,9 +170,13 @@ dataset = [
     {"Outlook":"Rainy","Temperature":"Mild","Humidity":"High","Windy":"True","Play":"No"}
 ]
 
-courseworkDataset = extractDatasetFromCSV("courseworkDataset.csv")
+if __name__ == "__main__":
+    courseworkDataset = extractDatasetFromCSV("courseworkDataset.csv")
 
-nodes = getNodesFromDataset(courseworkDataset, "quality")
+    nodes = getNodesFromDataset(courseworkDataset, "quality")
 
-renderNodes(nodes["Root"],1,"quality")
+    with open("nodesOutput.data", "wb") as f:
+        pickle.dump(nodes, f)
+
+    renderNodes(nodes["Root"],1,"quality")
 
