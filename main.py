@@ -91,7 +91,6 @@ def getResultOfDatasetEntry(entry : dict, startingNode : Node):
             nodesToCheck.append(nodeToCheck.children[entryValue])
     return "NaN"
 
-
 def getKeyFromPath(path : list[dict]):
     nodeClassPathList = []
     for innerPath in path:
@@ -182,10 +181,14 @@ def validateDataset(dataset : list[dict], nodes : dict[Node], checkClass : str):
 def testDatasetSize(dataset : list[dict], checkClass : str, percentages : list[float]):
     #Takes a list of and creates a tree based on x% of the dataset, then validates it.
     for percentage in percentages:
-        print(f"Testing with {round(len(dataset)*percentage)} items ({round(percentage*100, 2)}% of the dataset).")
         newDataset = copy.deepcopy(dataset)
+        amountOfDataset = round(len(newDataset)*percentage)
+        print(f"Testing with {round(len(dataset)*percentage)} items ({round(percentage*100, 2)}% of the dataset).")
+        if amountOfDataset <= 0:
+            print("Not enough data to test with.")
+            continue
         random.shuffle(newDataset)
-        newDataset = newDataset[:round(len(newDataset)*percentage)]
+        newDataset = newDataset[:amountOfDataset]
         nodes = getNodesFromDataset(newDataset, checkClass)
         valid, total = validateDataset(dataset, nodes, checkClass)
         print(f"Valid: {valid}/{total} ({round((valid/total)*100,2)}%).\n")
