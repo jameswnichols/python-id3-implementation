@@ -227,20 +227,22 @@ def testDatasetPercentages(dataset : list[dict], checkClass : str, percentages :
         averagePercentage = round((averageValid/len(dataset))*100,2)
         print(f"Average for {round(percentage*100, 2)}%: Valid: {round(averageValid,2)} / {len(dataset)} ({averagePercentage}%)")
 
-def testDatabaseRatio(dataset : list[dict], checkClass : str, ratios : dict, amount : int):
+def testDatabaseRatio(dataset : list[dict], checkClass : str, ratios : dict, amount : int, runs : int = 1):
     #Takes a dictionary of ratios and creates a tree based on the ratio of the dataset, then validates it.
     amountOfEach = {k:math.floor(v*amount) for k,v in ratios.items()}
-    evenAmountOfEach = getSetAmountFromDataset(loadedDataset, checkClass, amountOfEach)
-    nodes = getNodesFromDataset(evenAmountOfEach, checkClass)
-    valid, total = validateDataset(loadedDataset, nodes, checkClass)
-    print(f"{valid}/{total} ({round((valid/total)*100,2)}%)")
-    renderNodes(nodes[""],1,checkClass)
+    amountOfEachText = ", ".join([f"{k} x {v}" for k,v in amountOfEach.items()])
+    for run in range(runs):
+        print(f"({run+1}/{runs}) Testing with {amountOfEachText} ({round((amount/len(dataset))*100, 2)}% of the dataset).")
+        amountOfEachEntries = getSetAmountFromDataset(dataset, checkClass, amountOfEach)
+        nodes = getNodesFromDataset(amountOfEachEntries, checkClass)
+        valid, total = validateDataset(loadedDataset, nodes, checkClass)
+        print(f"Valid: {valid}/{total} ({round((valid/total)*100,2)}%)")
 
 if __name__ == "__main__":
     loadedDataset = extractDatasetFromCSV("courseworkDataset.csv")
     checkClass = list(loadedDataset[0].keys())[-1]
 
-    
+    testDatabaseRatio(loadedDataset, checkClass, {"unacc":0.7, "acc":0.2, "good":0.04, "vgood":0.04}, 100)
 
     # nodes = getNodesFromDataset(loadedDataset, checkClass)
 
