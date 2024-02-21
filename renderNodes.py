@@ -7,9 +7,9 @@ pygame.init()
 
 FONT = [pygame.font.SysFont("arialrounded", x) for x in range(1, 100)]
 
-SCREEN_SIZE = Vector2(800, 600)
+SCREEN_SIZE = Vector2(1280, 720)
 
-DISTRIBUTION_WIDTH = 800
+DISTRIBUTION_WIDTH = 500 #Per Level
 DISTRIBUTION_HEIGHT_GAP = 150
 
 class Object:
@@ -30,6 +30,7 @@ class Object:
         screenPosition = self.position - screenRect.topleft
         screen.blit(self.renderSurface, screenPosition)
         screen.blit(self.fontSurface, self.fontSurfacePosition-screenRect.topleft)
+    
     
 class Line:
     def __init__(self, startPosition : Vector2, endPosition : Vector2, text : str):
@@ -53,20 +54,27 @@ class Line:
         screen.blit(self.fontSurface, self.fontSurfacePosition - screenRect.topleft)
 
 def generateObjectsFromNodes(nodes : dict[Node], rootNodeName : str):
-    nodesToAdd = [{"node":nodes[rootNodeName],"position":Vector2(0, 0)}]
+    nodesToAdd = [{"node":nodes[rootNodeName],"position":Vector2(0, 0), "level":0}]
+    allNodes = []
     objects = []
     lines = []
     while len(nodesToAdd) > 0 :
         poppedNode = nodesToAdd.pop(0)
-        nodeToAdd, nodePosition = poppedNode["node"], poppedNode["position"]
-        childNodeStartPosition = nodePosition - Vector2(DISTRIBUTION_WIDTH/2, 0)
-        childDistanceBetween = DISTRIBUTION_WIDTH / (len(nodeToAdd.children) + 1)
+        nodeToAdd, nodePosition, nodeLevel = poppedNode["node"], poppedNode["position"], poppedNode["level"]
+        childNodeStartPosition = nodePosition - Vector2(DISTRIBUTION_WIDTH*(nodeLevel+1)/2, 0)
+        childDistanceBetween = (DISTRIBUTION_WIDTH*(nodeLevel+1)) / (len(nodeToAdd.children) + 1)
         for i, (joiningValue, child) in enumerate(nodeToAdd.children.items()):
             childPosition = childNodeStartPosition + Vector2(childDistanceBetween * (i + 1), DISTRIBUTION_HEIGHT_GAP)
+            # offset = -500 * nodeLevel if childPosition.x <= nodePosition.x else 500 * nodeLevel
+            # childPosition += Vector2(offset, 0)
             lines.append(Line(nodePosition + Vector2(12.5, 12.5), childPosition + Vector2(12.5, 12.5),joiningValue))
-            nodesToAdd.append({"node":child,"position":childPosition})
+
+            nodeData = {"node":child,"position":childPosition,"level":nodeLevel+1}
+            nodesToAdd.append(nodeData)
+            allNodes.append(nodeData)
         
-        objects.append(Object(nodePosition, blankSurface, nodeToAdd.paramClass))
+        objects.append(Object(nodePosition, blankSurface, nodeToAdd.Class))
+
     return lines, objects
         
 screen = pygame.display.set_mode(SCREEN_SIZE, vsync=True)
@@ -86,7 +94,7 @@ with open("nodesOutput.data", "rb") as f:
 blankSurface = pygame.Surface((25, 25))
 blankSurface.fill((255,0,0))
 
-lines, objects = generateObjectsFromNodes(nodes, "Root")#getNodesFromDataset(dataset, "Play")
+lines, objects = generateObjectsFromNodes(nodes, "")#getNodesFromDataset(dataset, "Play")
 
 while running:
     screen.fill((255,255,255))
