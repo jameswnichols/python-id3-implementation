@@ -11,14 +11,10 @@ class Node:
         self.children = {}
         self.decisions = {}
         self.paramClass = paramClass
-        self.parentClassValue = []
         self.parentClass = ""
     
     def addChild(self, value, node):
         self.children[value] = node
-
-    def addParentClassValue(self, value):
-        self.parentClassValue.append(value)
         #self.parentClassValue = value# = #list(dict.fromkeys(self.parentClassValue))
 
     def addDecision(self, classValue, result):
@@ -108,16 +104,22 @@ def renderNodes(node : Node, indent : int, checkClassName : str):
     for _, childNode in node.children.items():
         renderNodes(childNode, indent + 1, checkClassName)
 
+def getKeyFromPath(path : list[dict]):
+    nodeClassPathList = []
+    for innerPath in path:
+        nodePathKey, nodePathValue = list(innerPath.keys())[0], list(innerPath.values())[0]
+        nodeClassPathList.append(f"{nodePathKey}:{nodePathValue}")
+    return "/".join(nodeClassPathList)
+
 def getNodesFromDataset(dataset : list[dict], classToCheck : str):
     #classToCheck = "Play"
     classToCheckValues = getPossibleClassValuesFromDataset(classToCheck, dataset)
 
-    nodes = {"Root":Node("Root")}
-    rootNode = nodes["Root"]
-    classValueCheck = ClassValueCheck()
+    nodes = {"":Node("Root")}
+    #rootNode = nodes["Root"]
 
     #pathsToCheck = [{"node":"shape","path":[{"shape":"cylinder"}]}]
-    pathsToCheck = [{"node":"Root","path":[]}]
+    pathsToCheck = [{"path":[]}]
     valuesChecked = 0
 
     startTime = time.time()
@@ -132,14 +134,13 @@ def getNodesFromDataset(dataset : list[dict], classToCheck : str):
         pathToCheck = pathsToCheck.pop(0)
 
         currentDataset = copy.deepcopy(dataset)
-        rootNode = nodes[pathToCheck["node"]]
-
-        nodePathValue = ""
 
         #Filter Dataset Down
         for path in pathToCheck["path"]:
             currentDataset = filterDataset(currentDataset, path)
-            nodePathValue = list(path.values())[0]
+
+        nodeClassPath = getKeyFromPath(pathToCheck["path"])
+        rootNode = nodes[nodeClassPath]
         
         mainClassCheckEntropy = calculateEntropyFromDataset(classToCheck, currentDataset)
         classesToCheck = [x for x in list(currentDataset[0].keys()) if x != classToCheck]
@@ -154,30 +155,39 @@ def getNodesFromDataset(dataset : list[dict], classToCheck : str):
 
         print(f"{pathToCheck} :: {bestFittingClass['class']}")
 
-        if bestFittingClass["class"] not in nodes:
-            nodes[bestFittingClass["class"]] = Node(bestFittingClass["class"])
-            newNode = nodes[bestFittingClass["class"]]
-            newNode.addParentClassValue(nodePathValue)
-            classValueCheck.addClassValue(rootNode.paramClass, nodePathValue)
-            newNode.parentClass = rootNode.paramClass
-            rootNode.addChild(nodePathValue, newNode)
-        else:
-            newNode = nodes[bestFittingClass["class"]]
-            if classValueCheck.canUseClassValue(rootNode.paramClass, nodePathValue) and rootNode.paramClass == newNode.parentClass:
-                classValueCheck.addClassValue(rootNode.paramClass, nodePathValue)
-                newNode.addParentClassValue(nodePathValue)
-
         classValueLeaves, classValuesToExpand = getValuesLeavesExpandFromBestClass(bestFittingClass)
+
         for classValueLeaf in classValueLeaves:
-            if classValueCheck.canUseClassValue(classValueLeaf["value"], classValueLeaf["result"]):
-                newNode.addDecision(classValueLeaf["value"], classValueLeaf["result"])
-                classValueCheck.addClassValue(rootNode.paramClass, classValueLeaf["result"])
-            
+            rootNode.addDecision(classValueLeaf["value"], classValueLeaf["result"])
+
         for classValueToExpand in classValuesToExpand:
+            newNode = Node(bestFittingClass['class'])
+            rootNode.addChild(classValueToExpand, newNode)
             pathToAdd = copy.deepcopy(pathToCheck)
             pathToAdd["path"].append({bestFittingClass["class"]:classValueToExpand})
-            pathToAdd["node"] = bestFittingClass["class"]
+            nodesKeyPath = getKeyFromPath(pathToAdd["path"])
+            nodes[nodesKeyPath] = newNode
             pathsToCheck.append(pathToAdd)
+
+        # if bestFittingClass["class"] not in nodes:
+        #     nodes[bestFittingClass["class"]] = Node(bestFittingClass["class"])
+        #     newNode = nodes[bestFittingClass["class"]]
+        #     newNode.addParentClassValue(nodePathValue)
+        #     classValueCheck.addClassValue(rootNode.paramClass, nodePathValue)
+        #     newNode.parentClass = rootNode.paramClass
+        #     rootNode.addChild(nodePathValue, newNode)
+        # else:
+        #     newNode = nodes[bestFittingClass["class"]]
+        #     if classValueCheck.canUseClassValue(rootNode.paramClass, nodePathValue) and rootNode.paramClass == newNode.parentClass:
+        #         classValueCheck.addClassValue(rootNode.paramClass, nodePathValue)
+        #         newNode.addParentClassValue(nodePathValue)
+
+         
+        # for classValueLeaf in classValueLeaves:
+        #     if classValueCheck.canUseClassValue(classValueLeaf["value"], classValueLeaf["result"]):
+        #         newNode.addDecision(classValueLeaf["value"], classValueLeaf["result"])
+        #         classValueCheck.addClassValue(rootNode.paramClass, classValueLeaf["result"])
+        
     print("\n")
     return nodes
 
@@ -196,7 +206,7 @@ def extractDatasetFromCSV(filename):
     return dataset
 
 if __name__ == "__main__":
-    loadedDataset = extractDatasetFromCSV("courseworkDataset.csv")
+    loadedDataset = extractDatasetFromCSV("tennisDataset.csv")
     checkClass = list(loadedDataset[0].keys())[-1]
 
     nodes = getNodesFromDataset(loadedDataset, checkClass)
@@ -204,5 +214,5 @@ if __name__ == "__main__":
     with open("nodesOutput.data", "wb") as f:
         pickle.dump(nodes, f)
 
-    renderNodes(nodes["Root"],1,"quality")
+    #renderNodes(nodes[""],1,"quality")
 
