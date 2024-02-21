@@ -1,6 +1,10 @@
 import math
 import copy
 import pickle
+import time
+import shutil
+
+TERMINAL_SIZE = shutil.get_terminal_size((80, 20))
 
 class Node:
     def __init__(self, paramClass, parentClassValue):
@@ -87,7 +91,14 @@ def getNodesFromDataset(dataset : list[dict], classToCheck : str):
     pathsToCheck = [{"node":"Root","path":[]}]
     valuesChecked = 0
 
+    startTime = time.time()
+    lastLine = ""
+
     while len(pathsToCheck) > 0:
+        print(" "*len(lastLine),end="\r")
+        elapsedTime = time.time() - startTime
+        lastLine = f"Time Elapsed: {round(elapsedTime,2)}s // Nodes Created: {len(nodes)} // Paths Checked: {valuesChecked}"
+        print(lastLine,end="\r")
         valuesChecked += 1
         pathToCheck = pathsToCheck.pop(0)
 
@@ -128,7 +139,7 @@ def getNodesFromDataset(dataset : list[dict], classToCheck : str):
             pathToAdd["path"].append({bestFittingClass["class"]:classValueToExpand})
             pathToAdd["node"] = bestFittingClass["class"]
             pathsToCheck.append(pathToAdd)
-    print(valuesChecked)
+    print("\n")
     return nodes
 
 def extractDatasetFromCSV(filename):
