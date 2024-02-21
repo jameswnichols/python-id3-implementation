@@ -156,37 +156,11 @@ def extractDatasetFromCSV(filename):
         dataset.append(lineData)
     return dataset
 
-practicalDataset = [{"shape":"cylinder","color":"orange","volume":25,"sick":"no"},
-           {"shape":"cylinder","color":"black","volume":25,"sick":"no"},
-           {"shape":"coupe","color":"white","volume":10,"sick":"no"},
-           {"shape":"trapezoid","color":"green","volume":15,"sick":"no"},
-           {"shape":"coupe","color":"yellow","volume":15,"sick":"no"},
-           {"shape":"trapezoid","color":"orange","volume":15,"sick":"yes"},
-           {"shape":"coupe","color":"orange","volume":15,"sick":"yes"},
-           {"shape":"coupe","color":"orange","volume":10,"sick":"yes"},
-           ]
-
-dataset = [
-    {"Outlook":"Sunny","Temperature":"Hot","Humidity":"High","Windy":"False","Play":"No"},
-    {"Outlook":"Sunny","Temperature":"Hot","Humidity":"High","Windy":"True","Play":"No"},
-    {"Outlook":"Overcast","Temperature":"Hot","Humidity":"High","Windy":"False","Play":"Yes"},
-    {"Outlook":"Rainy","Temperature":"Mild","Humidity":"High","Windy":"False","Play":"Yes"},
-    {"Outlook":"Rainy","Temperature":"Cool","Humidity":"Normal","Windy":"False","Play":"Yes"},
-    {"Outlook":"Rainy","Temperature":"Cool","Humidity":"Normal","Windy":"True","Play":"No"},
-    {"Outlook":"Overcast","Temperature":"Cool","Humidity":"Normal","Windy":"True","Play":"Yes"},
-    {"Outlook":"Sunny","Temperature":"Mild","Humidity":"High","Windy":"False","Play":"No"},
-    {"Outlook":"Sunny","Temperature":"Cool","Humidity":"Normal","Windy":"False","Play":"Yes"},
-    {"Outlook":"Rainy","Temperature":"Mild","Humidity":"Normal","Windy":"False","Play":"Yes"},
-    {"Outlook":"Sunny","Temperature":"Mild","Humidity":"Normal","Windy":"True","Play":"Yes"},
-    {"Outlook":"Overcast","Temperature":"Mild","Humidity":"High","Windy":"True","Play":"Yes"},
-    {"Outlook":"Overcast","Temperature":"Hot","Humidity":"Normal","Windy":"False","Play":"Yes"},
-    {"Outlook":"Rainy","Temperature":"Mild","Humidity":"High","Windy":"True","Play":"No"}
-]
-
 if __name__ == "__main__":
-    courseworkDataset = extractDatasetFromCSV("courseworkDataset.csv")
+    loadedDataset = extractDatasetFromCSV("tennisDataset.csv")
+    checkClass = list(loadedDataset[0].keys())[-1]
 
-    nodes = getNodesFromDataset(courseworkDataset, "quality")
+    nodes = getNodesFromDataset(loadedDataset, checkClass)
 
     with open("nodesOutput.data", "wb") as f:
         pickle.dump(nodes, f)

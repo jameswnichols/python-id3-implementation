@@ -1,0 +1,9 @@
+shape,color,volume,sick
+cylinder,orange,25,no
+cylinder,black,25,no
+coupe,white,10,no
+trapezoid,green,15,no
+coupe,yellow,15,no
+trapezoid,orange,15,yes
+coupe,orange,15,yes
+coupe,orange,10,yes
