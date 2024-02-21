@@ -7,18 +7,46 @@ import shutil
 TERMINAL_SIZE = shutil.get_terminal_size((80, 20))
 
 class Node:
-    def __init__(self, paramClass, parentClassValue):
+    def __init__(self, paramClass):
         self.children = {}
         self.decisions = {}
         self.paramClass = paramClass
-        self.parentClassValue = parentClassValue
+        self.parentClassValue = []
         self.parentClass = ""
     
     def addChild(self, value, node):
         self.children[value] = node
 
+    def addParentClassValue(self, value):
+        self.parentClassValue.append(value)
+        #self.parentClassValue = value# = #list(dict.fromkeys(self.parentClassValue))
+
     def addDecision(self, classValue, result):
-        self.decisions [classValue] = result
+        self.decisions [classValue] = [result]
+        # if classValue not in self.decisions:
+        #     self.decisions [classValue] = [result]
+        # else:
+        #     self.decisions [classValue].append(result)
+        # self.decisions[classValue] = list(dict.fromkeys(self.decisions[classValue]))
+
+class ClassValueCheck:
+    def __init__(self):
+        self.classValues = {}
+    
+    def canUseClassValue(self, pClass : str, pValue : str):
+        if pClass not in self.classValues:
+            return True
+        
+        if pValue not in self.classValues[pClass]:
+            return True
+        
+        return False
+    
+    def addClassValue(self, pClass : str, pValue : str):
+        if pClass not in self.classValues:
+            self.classValues[pClass] = [pValue]
+        else:
+            self.classValues[pClass].append(pValue)
 
 def calculateEntropyFromDataset(parameter : str, dataset : list[dict]):
   probabilities = {}
@@ -84,8 +112,9 @@ def getNodesFromDataset(dataset : list[dict], classToCheck : str):
     #classToCheck = "Play"
     classToCheckValues = getPossibleClassValuesFromDataset(classToCheck, dataset)
 
-    nodes = {"Root":Node("Root","")}
+    nodes = {"Root":Node("Root")}
     rootNode = nodes["Root"]
+    classValueCheck = ClassValueCheck()
 
     #pathsToCheck = [{"node":"shape","path":[{"shape":"cylinder"}]}]
     pathsToCheck = [{"node":"Root","path":[]}]
@@ -95,10 +124,10 @@ def getNodesFromDataset(dataset : list[dict], classToCheck : str):
     lastLine = ""
 
     while len(pathsToCheck) > 0:
-        print(" "*len(lastLine),end="\r")
+        #print(" "*len(lastLine),end="\r")
         elapsedTime = time.time() - startTime
         lastLine = f"Time Elapsed: {round(elapsedTime,2)}s // Nodes Created: {len(nodes)} // Paths Checked: {valuesChecked}"
-        print(lastLine,end="\r")
+        #print(lastLine,end="\r")
         valuesChecked += 1
         pathToCheck = pathsToCheck.pop(0)
 
@@ -124,15 +153,26 @@ def getNodesFromDataset(dataset : list[dict], classToCheck : str):
                 bestFittingClass = {"class":dClass,"infoGain":classInformationGain,"entropys":classEntropys}
 
         if bestFittingClass["class"] not in nodes:
-            nodes[bestFittingClass["class"]] = Node(bestFittingClass["class"], nodePathValue)
+            nodes[bestFittingClass["class"]] = Node(bestFittingClass["class"])
             newNode = nodes[bestFittingClass["class"]]
+            newNode.addParentClassValue(nodePathValue)
+            classValueCheck.addClassValue(rootNode.paramClass, nodePathValue)
             newNode.parentClass = rootNode.paramClass
             rootNode.addChild(nodePathValue, newNode)
-        newNode = nodes[bestFittingClass["class"]]
+        else:
+            newNode = nodes[bestFittingClass["class"]]
+            if classValueCheck.canUseClassValue(rootNode.paramClass, nodePathValue) and rootNode.paramClass == newNode.parentClass:
+                print(f"{rootNode.paramClass} :: {nodePathValue}")
+                classValueCheck.addClassValue(rootNode.paramClass, nodePathValue)
+                newNode.addParentClassValue(nodePathValue)
+            #print(f"{rootNode.paramClass} :: {nodePathValue}")
+        #     rootNode.addParentClassValue(nodePathValue)
 
         classValueLeaves, classValuesToExpand = getValuesLeavesExpandFromBestClass(bestFittingClass)
         for classValueLeaf in classValueLeaves:
-            newNode.addDecision(classValueLeaf["value"], classValueLeaf["result"])
+            if classValueCheck.canUseClassValue(classValueLeaf["value"], classValueLeaf["result"]):
+                newNode.addDecision(classValueLeaf["value"], classValueLeaf["result"])
+                classValueCheck.addClassValue(rootNode.paramClass, classValueLeaf["result"])
             
         for classValueToExpand in classValuesToExpand:
             pathToAdd = copy.deepcopy(pathToCheck)
