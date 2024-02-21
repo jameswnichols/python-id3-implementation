@@ -1,88 +1,169 @@
 import math
+import copy
+import pickle
+import time
+import shutil
 
-dataset = [{"shape":"cylinder","color":"orange","volume":25,"sick":"no"},
-           {"shape":"cylinder","color":"black","volume":25,"sick":"no"},
-           {"shape":"coupe","color":"white","volume":10,"sick":"no"},
-           {"shape":"trapezoid","color":"green","volume":15,"sick":"no"},
-           {"shape":"coupe","color":"yellow","volume":15,"sick":"no"},
-           {"shape":"trapezoid","color":"orange","volume":15,"sick":"yes"},
-           {"shape":"coupe","color":"orange","volume":15,"sick":"yes"},
-           {"shape":"coupe","color":"orange","volume":10,"sick":"yes"},
-           ]
+TERMINAL_SIZE = shutil.get_terminal_size((80, 20))
 
-def calculateEntropyFromDataset(parameter : str, dataset : list[dict], clearedValues : dict):
-  allowedRows = getAllowedRows(dataset, clearedValues)
+class Node:
+    def __init__(self, paramClass, parentClassValue):
+        self.children = {}
+        self.decisions = {}
+        self.paramClass = paramClass
+        self.parentClassValue = parentClassValue
+        self.parentClass = ""
+    
+    def addChild(self, value, node):
+        self.children[value] = node
+
+    def addDecision(self, classValue, result):
+        self.decisions [classValue] = result
+
+def calculateEntropyFromDataset(parameter : str, dataset : list[dict]):
   probabilities = {}
-  # probabilities = {row[rootParam] : 0 for row in allowedRows}
-  paramValues = [row[parameter] for row in allowedRows]
-  for x in set(paramValues):
+  paramValues = [row[parameter] for row in dataset]
+  for x in list(dict.fromkeys(paramValues)):
     probabilities[x] = paramValues.count(x)/len(paramValues)
-  return -sum([prob * math.log2(prob) for x, prob in probabilities.items()]), len(paramValues)
+  return -sum([prob * math.log2(prob) for x, prob in probabilities.items()])
 
-def getAllowedRows(dataset : list[dict], clearedValues : dict):
-  allowedRows = []
-  for row in dataset:
-    validRow = True
-    for rowK, rowV in row.items():
-      if rowK in clearedValues and rowV in clearedValues[rowK]:
-        validRow = False
-        break
-    if validRow:
-      allowedRows.append(row)
-  return allowedRows
+def calculateClassValueEntropyFromDataset(paramClass : str, dataset : list[dict], checkClass : str, checkClassValues : list[str]):
+    paramValues = list(dict.fromkeys([row[paramClass] for row in dataset]))
+    paramProb = {pV : {cV : 0 for cV in checkClassValues} for pV in paramValues}
+    for row in dataset:
+        paramProb[row[paramClass]][row[checkClass]] += 1
+    paramEntropys = {}
+    for paramVal, checkResults in paramProb.items():
+        valTotal = sum(crV for crV in list(checkResults.values()))
+        valProbs = [crV / valTotal for crV in list(checkResults.values())]
+        paramEntropy = -sum([prob * math.log2(prob) if prob else 0 for prob in valProbs])
+        paramEntropys[paramVal] = {"entropy":paramEntropy,"total":valTotal,"results":checkResults}
+    return paramEntropys
 
-def calculateValueEntropys(parameter : str, dataset : list[dict], rootParam : str, clearedValues : dict):
-  allowedRows = getAllowedRows(dataset, clearedValues)
-  paramValues = set([x[parameter] for x in allowedRows])
-  paramProbabilities = {pV : {rD[rootParam] : 0 for rD in allowedRows} for pV in paramValues}
-  for row in allowedRows:
-    paramVal, rootVal = row[parameter], row[rootParam]
-    paramProbabilities[paramVal][rootVal] += 1
-  print(paramProbabilities)
-  paramEntropys = {}
-  entropyValues = []
-  for paramVal, results in paramProbabilities.items():
-    totalResults = sum([rV for rK, rV in results.items()])
-    probabilities = [(rV / totalResults) for rK, rV in results.items()]
-    entropy = -sum([prob * math.log2(prob) if prob else 0 for prob in probabilities])
-    paramEntropys[paramVal] = {"entropy":entropy,"total":totalResults}
-    entropyValues.append(entropy)
-  lowestEntropy = min(entropyValues)
-  valuesToClear = [pK for pK, pV in paramEntropys.items() if pV["entropy"] == lowestEntropy]
-  return paramEntropys, valuesToClear
+def calculateClassInformationGainFromDataset(classEntropys : dict, dataset : list[dict], checkClassEntropy : float):
+    return checkClassEntropy - sum([(cEV["total"]/len(dataset)) * cEV["entropy"] for cEV in list(classEntropys.values())])
 
-def calculateInformationGain(valueEntropys : dict[dict], datasetEntropy : float, datasetLength : int):
-  return datasetEntropy - sum([(vE["total"]/datasetLength) * vE["entropy"] for vK, vE in valueEntropys.items()])
+def filterDataset(dataset : list[dict], path : dict):
+    pathKey, pathValue = list(path.items())[0]
+    newDataset = []
+    for row in dataset:
+        if pathKey in row and row[pathKey] == pathValue:
+            newRow = copy.deepcopy(row)
+            del newRow[pathKey]
+            newDataset.append(newRow)
+    return newDataset
 
-rootParam = "sick"
+def getPossibleClassValuesFromDataset(paramClass : str, dataset : list[dict]):
+    possibleClasses = []
+    for row in dataset:
+        possibleClasses.append(row[paramClass])
+    return list(dict.fromkeys(possibleClasses))
 
-usedParams = [rootParam]
+def getValuesLeavesExpandFromBestClass(bestFittingClass : dict):
+    leaves = []
+    expand = []
+    #Check if multiple values result in the same thing, if so then group them.
+    for value, entropyData in bestFittingClass["entropys"].items():
+        if entropyData["entropy"] == 0.0:
+            entropyResultValue = [rK for rK, rV in entropyData["results"].items() if rV > 0][0]
+            #allLeafValues.extend(entropyResultValue)
+            leaves.append({"value":value,"result":entropyResultValue})
+        else:
+            expand.append(value)
+    return leaves, expand
 
-clearedValues = {}
+def renderNodes(node : Node, indent : int, checkClassName : str):
+    spacing = "  " * (indent - 1) + f"If {node.parentClass} = {node.parentClassValue}; check " if node.parentClassValue else "↳ "
+    print(spacing + node.paramClass)
+    for classValue, result in node.decisions.items():
+        print("  " * (indent) + f"↳ If {node.paramClass} = {classValue}; {checkClassName} = {result} - END")
+    for _, childNode in node.children.items():
+        renderNodes(childNode, indent + 1, checkClassName)
 
-datasetKeys = list(dataset[0].keys())
+def getNodesFromDataset(dataset : list[dict], classToCheck : str):
+    #classToCheck = "Play"
+    classToCheckValues = getPossibleClassValuesFromDataset(classToCheck, dataset)
 
-datasetEntropy, datasetLength = calculateEntropyFromDataset(rootParam, dataset, clearedValues)
+    nodes = {"Root":Node("Root","")}
+    rootNode = nodes["Root"]
 
-while (len(usedParams) != len(datasetKeys)) and len(getAllowedRows(dataset, clearedValues)) != 0:
+    #pathsToCheck = [{"node":"shape","path":[{"shape":"cylinder"}]}]
+    pathsToCheck = [{"node":"Root","path":[]}]
+    valuesChecked = 0
 
-  infoGains = {}
+    startTime = time.time()
+    lastLine = ""
 
-  for value in [x for x in datasetKeys if x not in usedParams]:
+    while len(pathsToCheck) > 0:
+        print(" "*len(lastLine),end="\r")
+        elapsedTime = time.time() - startTime
+        lastLine = f"Time Elapsed: {round(elapsedTime,2)}s // Nodes Created: {len(nodes)} // Paths Checked: {valuesChecked}"
+        print(lastLine,end="\r")
+        valuesChecked += 1
+        pathToCheck = pathsToCheck.pop(0)
 
-    valueEntropy, valuesToClear = calculateValueEntropys(value,dataset,rootParam, clearedValues)
-    print(valueEntropy)
+        currentDataset = copy.deepcopy(dataset)
+        rootNode = nodes[pathToCheck["node"]]
 
-    infoGain = calculateInformationGain(valueEntropy, datasetEntropy, datasetLength)
+        nodePathValue = ""
 
-    infoGains[value] = {"gain":infoGain, "valuesToClear":valuesToClear}
+        #Filter Dataset Down
+        for path in pathToCheck["path"]:
+            currentDataset = filterDataset(currentDataset, path)
+            nodePathValue = list(path.values())[0]
+        
+        mainClassCheckEntropy = calculateEntropyFromDataset(classToCheck, currentDataset)
+        classesToCheck = [x for x in list(currentDataset[0].keys()) if x != classToCheck]
 
-  sortedInfoGains = {k: v for k, v in sorted(infoGains.items(), key=lambda item: item[1]["gain"])}
-  chosenValue = list(sortedInfoGains.keys())[-1]
-  usedParams.append(chosenValue)
-  clearedValues[chosenValue] = sortedInfoGains[chosenValue]["valuesToClear"]
-  datasetEntropy, datasetLength = calculateEntropyFromDataset(chosenValue, dataset, clearedValues)
-  rootParam = chosenValue
+        bestFittingClass = {"class":"NaN","infoGain":-100.0}
+        for dClass in classesToCheck:
+            
+            classEntropys = calculateClassValueEntropyFromDataset(dClass, currentDataset, classToCheck, classToCheckValues)
+            classInformationGain = calculateClassInformationGainFromDataset(classEntropys, dataset, mainClassCheckEntropy)
+            if classInformationGain > bestFittingClass["infoGain"]:
+                bestFittingClass = {"class":dClass,"infoGain":classInformationGain,"entropys":classEntropys}
 
-  ## 1 bit of entropy
-  #print(f"{value} : {infoGain}")
+        if bestFittingClass["class"] not in nodes:
+            nodes[bestFittingClass["class"]] = Node(bestFittingClass["class"], nodePathValue)
+            newNode = nodes[bestFittingClass["class"]]
+            newNode.parentClass = rootNode.paramClass
+            rootNode.addChild(nodePathValue, newNode)
+        newNode = nodes[bestFittingClass["class"]]
+
+        classValueLeaves, classValuesToExpand = getValuesLeavesExpandFromBestClass(bestFittingClass)
+        for classValueLeaf in classValueLeaves:
+            newNode.addDecision(classValueLeaf["value"], classValueLeaf["result"])
+            
+        for classValueToExpand in classValuesToExpand:
+            pathToAdd = copy.deepcopy(pathToCheck)
+            pathToAdd["path"].append({bestFittingClass["class"]:classValueToExpand})
+            pathToAdd["node"] = bestFittingClass["class"]
+            pathsToCheck.append(pathToAdd)
+    print("\n")
+    return nodes
+
+def extractDatasetFromCSV(filename):
+    dataset = []
+    fileData = None
+    classes = []
+    with open(filename, "r") as f:
+        fileData = f.readlines()
+    classes = fileData[0].strip().split(",")
+    for line in fileData[1:]:
+        lineData = {}
+        for i, value in enumerate(line.strip().split(",")):
+            lineData[classes[i]] = value
+        dataset.append(lineData)
+    return dataset
+
+if __name__ == "__main__":
+    loadedDataset = extractDatasetFromCSV("courseworkDataset.csv")
+    checkClass = list(loadedDataset[0].keys())[-1]
+
+    nodes = getNodesFromDataset(loadedDataset, checkClass)
+
+    with open("nodesOutput.data", "wb") as f:
+        pickle.dump(nodes, f)
+
+    renderNodes(nodes["Root"],1,"quality")
+

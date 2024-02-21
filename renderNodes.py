@@ -1,6 +1,6 @@
 import pygame
 from pygame import Vector2
-from mainRewrite import *
+from main import *
 import pickle
 
 pygame.init()
