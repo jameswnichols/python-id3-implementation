@@ -231,12 +231,22 @@ def testDatabaseRatio(dataset : list[dict], checkClass : str, ratios : dict, amo
     #Takes a dictionary of ratios and creates a tree based on the ratio of the dataset, then validates it.
     amountOfEach = {k:math.floor(v*amount) for k,v in ratios.items()}
     amountOfEachText = ", ".join([f"{k} x {v}" for k,v in amountOfEach.items()])
+
+    averageValues = []
+    timeRunsStart = time.time()
+
     for run in range(runs):
         print(f"({run+1}/{runs}) Testing with {amountOfEachText} ({round((amount/len(dataset))*100, 2)}% of the dataset).")
         amountOfEachEntries = getSetAmountFromDataset(dataset, checkClass, amountOfEach)
         nodes = getNodesFromDataset(amountOfEachEntries, checkClass)
         valid, total = validateDataset(loadedDataset, nodes, checkClass)
+        averageValues.append(valid)
+
         print(f"Valid: {valid}/{total} ({round((valid/total)*100,2)}%)")
+
+    average = sum(averageValues)/len(averageValues)
+    print(f"Averages for {runs} runs ({round(time.time()-timeRunsStart,2)}s):")
+    print(f"Average for {amountOfEachText}: Valid: {round(average)}/{len(dataset)} ({round((average/len(dataset))*100,2)}%)")
 
 if __name__ == "__main__":
     loadedDataset = extractDatasetFromCSV("courseworkDataset.csv")
