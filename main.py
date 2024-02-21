@@ -4,6 +4,7 @@ import pickle
 import time
 import shutil
 import random
+import math
 
 TERMINAL_SIZE = shutil.get_terminal_size((80, 20))
 
@@ -178,7 +179,21 @@ def validateDataset(dataset : list[dict], nodes : dict[Node], checkClass : str):
 
     return valid, len(dataset)
 
-def testDatasetSize(dataset : list[dict], checkClass : str, percentages : list[float], runs : int = 1):
+def getSetAmountFromDataset(dataset : list[dict], checkClass : str, amountOfEach : dict[str, int]):
+    #Takes a dictionary of class values and the amount of each to get from the dataset, then returns a new dataset with that amount of each class value.
+    classToCheckValues = getPossibleClassValuesFromDataset(checkClass, dataset)
+    perValueEntry = {x : [] for x in classToCheckValues}
+    for row in dataset:
+        perValueEntry[row[checkClass]].append(row)
+
+    newDataset = []
+    for value, entries in perValueEntry.items():
+        random.shuffle(entries)
+        if len(entries) >= amountOfEach[value]:
+            newDataset.extend(entries[:amountOfEach[value]])
+    return newDataset
+
+def testDatasetPercentages(dataset : list[dict], checkClass : str, percentages : list[float], runs : int = 1):
     #Takes a list of percentages and creates a tree based on x% of the dataset, then validates it.
 
     #1.0 -> {"valid":0, "total":0}
@@ -212,9 +227,20 @@ def testDatasetSize(dataset : list[dict], checkClass : str, percentages : list[f
         averagePercentage = round((averageValid/len(dataset))*100,2)
         print(f"Average for {round(percentage*100, 2)}%: Valid: {round(averageValid,2)} / {len(dataset)} ({averagePercentage}%)")
 
+def testDatabaseRatio(dataset : list[dict], checkClass : str, ratios : dict, amount : int):
+    #Takes a dictionary of ratios and creates a tree based on the ratio of the dataset, then validates it.
+    amountOfEach = {k:math.floor(v*amount) for k,v in ratios.items()}
+    evenAmountOfEach = getSetAmountFromDataset(loadedDataset, checkClass, amountOfEach)
+    nodes = getNodesFromDataset(evenAmountOfEach, checkClass)
+    valid, total = validateDataset(loadedDataset, nodes, checkClass)
+    print(f"{valid}/{total} ({round((valid/total)*100,2)}%)")
+    renderNodes(nodes[""],1,checkClass)
+
 if __name__ == "__main__":
     loadedDataset = extractDatasetFromCSV("courseworkDataset.csv")
     checkClass = list(loadedDataset[0].keys())[-1]
+
+    
 
     # nodes = getNodesFromDataset(loadedDataset, checkClass)
 
@@ -222,7 +248,7 @@ if __name__ == "__main__":
     #     pickle.dump(nodes, f)
 
     #renderNodes(nodes[""],1,"quality")
-    testDatasetSize(loadedDataset, checkClass, [1.0, 0.75, 0.5, 0.25, 0.1, 0.05, 0.01], 5)
+    #testDatasetSize(loadedDataset, checkClass, [1.0, 0.75, 0.5, 0.25, 0.1, 0.05, 0.01], 5)
 
     # randomEntry = random.choice(loadedDataset)
     # valid = 0
