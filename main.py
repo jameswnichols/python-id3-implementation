@@ -178,20 +178,39 @@ def validateDataset(dataset : list[dict], nodes : dict[Node], checkClass : str):
 
     return valid, len(dataset)
 
-def testDatasetSize(dataset : list[dict], checkClass : str, percentages : list[float]):
-    #Takes a list of and creates a tree based on x% of the dataset, then validates it.
-    for percentage in percentages:
-        newDataset = copy.deepcopy(dataset)
-        amountOfDataset = round(len(newDataset)*percentage)
-        print(f"Testing with {round(len(dataset)*percentage)} items ({round(percentage*100, 2)}% of the dataset).")
-        if amountOfDataset <= 0:
-            print("Not enough data to test with.")
-            continue
-        random.shuffle(newDataset)
-        newDataset = newDataset[:amountOfDataset]
-        nodes = getNodesFromDataset(newDataset, checkClass)
-        valid, total = validateDataset(dataset, nodes, checkClass)
-        print(f"Valid: {valid}/{total} ({round((valid/total)*100,2)}%).\n")
+def testDatasetSize(dataset : list[dict], checkClass : str, percentages : list[float], runs : int = 1):
+    #Takes a list of percentages and creates a tree based on x% of the dataset, then validates it.
+
+    #1.0 -> {"valid":0, "total":0}
+    percentageAverages = {}
+    timeRunsStart = time.time()
+
+    for run in range(runs):
+        for percentage in percentages:
+            newDataset = copy.deepcopy(dataset)
+            amountOfDataset = round(len(newDataset)*percentage)
+            print(f"({run+1}/{runs}) Testing with {round(len(dataset)*percentage)} items ({round(percentage*100, 2)}% of the dataset).")
+            if amountOfDataset <= 0:
+                print("Not enough data to test with.")
+                continue
+            random.shuffle(newDataset)
+            newDataset = newDataset[:amountOfDataset]
+            nodes = getNodesFromDataset(newDataset, checkClass)
+            valid, total = validateDataset(dataset, nodes, checkClass)
+
+            if percentage not in percentageAverages:
+                percentageAverages[percentage] = {"valid":0, "total":0}
+            else:
+                percentageAverages[percentage]["valid"] += valid
+                percentageAverages[percentage]["total"] += 1
+            
+            print(f"Valid: {valid}/{total} ({round((valid/total)*100,2)}%).\n")
+    
+    print(f"Averages for {runs} runs ({round(time.time()-timeRunsStart,2)}s):")
+    for percentage, data in percentageAverages.items():
+        averageValid = (data['valid']/data['total'])
+        averagePercentage = round((averageValid/len(percentageAverages))*100,2)
+        print(f"Average for {round(percentage*100, 2)}%: Valid: {round(averageValid,2)} / {len(dataset)} ({averagePercentage}%)")
 
 if __name__ == "__main__":
     loadedDataset = extractDatasetFromCSV("courseworkDataset.csv")
@@ -203,7 +222,7 @@ if __name__ == "__main__":
     #     pickle.dump(nodes, f)
 
     #renderNodes(nodes[""],1,"quality")
-    testDatasetSize(loadedDataset, checkClass, [1.0, 0.75, 0.5, 0.25, 0.1, 0.05, 0.01])
+    testDatasetSize(loadedDataset, checkClass, [1.0, 0.75, 0.5, 0.25, 0.1, 0.05, 0.01], 5)
 
     # randomEntry = random.choice(loadedDataset)
     # valid = 0
