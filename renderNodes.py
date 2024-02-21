@@ -86,7 +86,7 @@ with open("nodesOutput.data", "rb") as f:
 blankSurface = pygame.Surface((25, 25))
 blankSurface.fill((255,0,0))
 
-lines, objects = generateObjectsFromNodes(nodes, "Root")#[Object(Vector2(0, 0), blankSurface)]
+lines, objects = generateObjectsFromNodes(nodes, "Root")#getNodesFromDataset(dataset, "Play")
 
 while running:
     screen.fill((255,255,255))

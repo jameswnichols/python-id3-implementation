@@ -58,9 +58,11 @@ def getPossibleClassValuesFromDataset(paramClass : str, dataset : list[dict]):
 def getValuesLeavesExpandFromBestClass(bestFittingClass : dict):
     leaves = []
     expand = []
+    #Check if multiple values result in the same thing, if so then group them.
     for value, entropyData in bestFittingClass["entropys"].items():
         if entropyData["entropy"] == 0.0:
             entropyResultValue = [rK for rK, rV in entropyData["results"].items() if rV > 0][0]
+            #allLeafValues.extend(entropyResultValue)
             leaves.append({"value":value,"result":entropyResultValue})
         else:
             expand.append(value)
