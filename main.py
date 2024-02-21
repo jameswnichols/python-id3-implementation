@@ -209,7 +209,7 @@ def testDatasetSize(dataset : list[dict], checkClass : str, percentages : list[f
     print(f"Averages for {runs} runs ({round(time.time()-timeRunsStart,2)}s):")
     for percentage, data in percentageAverages.items():
         averageValid = (data['valid']/data['total'])
-        averagePercentage = round((averageValid/len(percentageAverages))*100,2)
+        averagePercentage = round((averageValid/len(dataset))*100,2)
         print(f"Average for {round(percentage*100, 2)}%: Valid: {round(averageValid,2)} / {len(dataset)} ({averagePercentage}%)")
 
 if __name__ == "__main__":
