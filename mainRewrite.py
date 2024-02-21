@@ -85,8 +85,6 @@ def getNodesFromDataset(dataset : list[dict], classToCheck : str):
 
     #pathsToCheck = [{"node":"shape","path":[{"shape":"cylinder"}]}]
     pathsToCheck = [{"node":"Root","path":[]}]
-    previousNodes = []
-
     valuesChecked = 0
 
     while len(pathsToCheck) > 0:
@@ -125,15 +123,11 @@ def getNodesFromDataset(dataset : list[dict], classToCheck : str):
         for classValueLeaf in classValueLeaves:
             newNode.addDecision(classValueLeaf["value"], classValueLeaf["result"])
             
-
-        if bestFittingClass["class"] not in previousNodes:
-            
-            for classValueToExpand in classValuesToExpand:
-                pathToAdd = copy.deepcopy(pathToCheck)
-                pathToAdd["path"].append({bestFittingClass["class"]:classValueToExpand})
-                pathToAdd["node"] = bestFittingClass["class"]
-                pathsToCheck.append(pathToAdd)
-            #previousNodes.append(bestFittingClass["class"])
+        for classValueToExpand in classValuesToExpand:
+            pathToAdd = copy.deepcopy(pathToCheck)
+            pathToAdd["path"].append({bestFittingClass["class"]:classValueToExpand})
+            pathToAdd["node"] = bestFittingClass["class"]
+            pathsToCheck.append(pathToAdd)
     print(valuesChecked)
     return nodes
 
