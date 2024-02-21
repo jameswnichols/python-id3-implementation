@@ -152,6 +152,8 @@ def getNodesFromDataset(dataset : list[dict], classToCheck : str):
             if classInformationGain > bestFittingClass["infoGain"]:
                 bestFittingClass = {"class":dClass,"infoGain":classInformationGain,"entropys":classEntropys}
 
+        print(f"{pathToCheck} :: {bestFittingClass['class']}")
+
         if bestFittingClass["class"] not in nodes:
             nodes[bestFittingClass["class"]] = Node(bestFittingClass["class"])
             newNode = nodes[bestFittingClass["class"]]
@@ -162,11 +164,8 @@ def getNodesFromDataset(dataset : list[dict], classToCheck : str):
         else:
             newNode = nodes[bestFittingClass["class"]]
             if classValueCheck.canUseClassValue(rootNode.paramClass, nodePathValue) and rootNode.paramClass == newNode.parentClass:
-                print(f"{rootNode.paramClass} :: {nodePathValue}")
                 classValueCheck.addClassValue(rootNode.paramClass, nodePathValue)
                 newNode.addParentClassValue(nodePathValue)
-            #print(f"{rootNode.paramClass} :: {nodePathValue}")
-        #     rootNode.addParentClassValue(nodePathValue)
 
         classValueLeaves, classValuesToExpand = getValuesLeavesExpandFromBestClass(bestFittingClass)
         for classValueLeaf in classValueLeaves:
