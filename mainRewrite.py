@@ -87,7 +87,10 @@ def getNodesFromDataset(dataset : list[dict], classToCheck : str):
     pathsToCheck = [{"node":"Root","path":[]}]
     previousNodes = []
 
+    valuesChecked = 0
+
     while len(pathsToCheck) > 0:
+        valuesChecked += 1
         pathToCheck = pathsToCheck.pop(0)
 
         currentDataset = copy.deepcopy(dataset)
@@ -111,10 +114,12 @@ def getNodesFromDataset(dataset : list[dict], classToCheck : str):
             if classInformationGain > bestFittingClass["infoGain"]:
                 bestFittingClass = {"class":dClass,"infoGain":classInformationGain,"entropys":classEntropys}
 
-        nodes[bestFittingClass["class"]] = Node(bestFittingClass["class"], nodePathValue)
+        if bestFittingClass["class"] not in nodes:
+            nodes[bestFittingClass["class"]] = Node(bestFittingClass["class"], nodePathValue)
+            newNode = nodes[bestFittingClass["class"]]
+            newNode.parentClass = rootNode.paramClass
+            rootNode.addChild(nodePathValue, newNode)
         newNode = nodes[bestFittingClass["class"]]
-        newNode.parentClass = rootNode.paramClass
-        rootNode.addChild(nodePathValue, newNode)
 
         classValueLeaves, classValuesToExpand = getValuesLeavesExpandFromBestClass(bestFittingClass)
         for classValueLeaf in classValueLeaves:
@@ -129,6 +134,7 @@ def getNodesFromDataset(dataset : list[dict], classToCheck : str):
                 pathToAdd["node"] = bestFittingClass["class"]
                 pathsToCheck.append(pathToAdd)
             #previousNodes.append(bestFittingClass["class"])
+    print(valuesChecked)
     return nodes
 
 def extractDatasetFromCSV(filename):
