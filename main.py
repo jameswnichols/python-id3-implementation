@@ -3,6 +3,7 @@ import copy
 import pickle
 import time
 import shutil
+import random
 
 TERMINAL_SIZE = shutil.get_terminal_size((80, 20))
 
@@ -10,39 +11,14 @@ class Node:
     def __init__(self, classValue):
         self.children = {}
         self.decisions = {}
-        self.classValue = classValue
+        self.Class = classValue
         self.parentClass = ""
     
     def addChild(self, value, node):
         self.children[value] = node
-        #self.parentClassValue = value# = #list(dict.fromkeys(self.parentClassValue))
 
     def addDecision(self, classValue, result):
         self.decisions [classValue] = result
-        # if classValue not in self.decisions:
-        #     self.decisions [classValue] = [result]
-        # else:
-        #     self.decisions [classValue].append(result)
-        # self.decisions[classValue] = list(dict.fromkeys(self.decisions[classValue]))
-
-class ClassValueCheck:
-    def __init__(self):
-        self.classValues = {}
-    
-    def canUseClassValue(self, pClass : str, pValue : str):
-        if pClass not in self.classValues:
-            return True
-        
-        if pValue not in self.classValues[pClass]:
-            return True
-        
-        return False
-    
-    def addClassValue(self, pClass : str, pValue : str):
-        if pClass not in self.classValues:
-            self.classValues[pClass] = [pValue]
-        else:
-            self.classValues[pClass].append(pValue)
 
 def calculateEntropyFromDataset(parameter : str, dataset : list[dict]):
   probabilities = {}
@@ -97,16 +73,24 @@ def getValuesLeavesExpandFromBestClass(bestFittingClass : dict):
     return leaves, expand
 
 def renderNodes(node : Node, indent : int, checkClassName : str, parentClass = None, parentClassValue = None):
-
     classValueString = f"If {parentClass} = {parentClassValue}; " if parentClassValue and parentClass else ""
-
-    print("  " * (indent - 1) + f"{classValueString}Check {node.classValue}:")
-    # spacing = "  " * (indent - 1) + f"If {node.parentClass} = {node.parentClassValue}; check " if node.parentClassValue else "↳ "
-    # print(spacing + node.classValue)
+    print("  " * (indent - 1) + f"{classValueString}Check {node.Class}:")
     for classValue, result in node.decisions.items():
-        print("  " * (indent) + f"If {node.classValue} = {classValue}; {checkClassName} = {result}")
+        print("  " * (indent) + f"If {node.Class} = {classValue}; {checkClassName} = {result}")
     for pathValue, childNode in node.children.items():
-        renderNodes(childNode, indent + 1, checkClassName,node.classValue ,pathValue)
+        renderNodes(childNode, indent + 1, checkClassName,node.Class ,pathValue)
+
+def getResultOfDatasetEntry(entry : dict, startingNode : Node):
+    nodesToCheck = [startingNode]
+    while len(nodesToCheck) > 0:
+        nodeToCheck = nodesToCheck.pop(0)
+        entryValue = entry[nodeToCheck.Class]
+        if entryValue in nodeToCheck.decisions:
+            return nodeToCheck.decisions[entryValue]
+        elif entryValue in nodeToCheck.children:
+            nodesToCheck.append(nodeToCheck.children[entryValue])
+    return "NaN"
+
 
 def getKeyFromPath(path : list[dict]):
     nodeClassPathList = []
@@ -116,14 +100,13 @@ def getKeyFromPath(path : list[dict]):
     return "/".join(nodeClassPathList)
 
 def getNodesFromDataset(dataset : list[dict], classToCheck : str):
-    #classToCheck = "Play"
     classToCheckValues = getPossibleClassValuesFromDataset(classToCheck, dataset)
 
     nodes = {"":Node("Root")}
     #rootNode = nodes["Root"]
 
     #pathsToCheck = [{"node":"shape","path":[{"shape":"cylinder"}]}]
-    pathsToCheck = [{"path":[]}]
+    pathsToCheck = [[]]
     valuesChecked = 0
 
     startTime = time.time()
@@ -132,7 +115,7 @@ def getNodesFromDataset(dataset : list[dict], classToCheck : str):
     while len(pathsToCheck) > 0:
         print(" "*len(lastLine),end="\r")
         elapsedTime = time.time() - startTime
-        lastLine = f"Time Elapsed: {round(elapsedTime,2)}s // Nodes Created: {len(nodes)} // Paths Checked: {valuesChecked}"
+        lastLine = f"Time Elapsed: {round(elapsedTime,2)}s // Nodes Created: {len(nodes)} // Paths Checked: {valuesChecked} // Percentage Complete: {round((valuesChecked/len(nodes))*100,2)}%"
         print(lastLine,end="\r")
         valuesChecked += 1
         pathToCheck = pathsToCheck.pop(0)
@@ -140,10 +123,10 @@ def getNodesFromDataset(dataset : list[dict], classToCheck : str):
         currentDataset = copy.deepcopy(dataset)
 
         #Filter Dataset Down
-        for path in pathToCheck["path"]:
+        for path in pathToCheck:
             currentDataset = filterDataset(currentDataset, path)
 
-        nodeClassPath = getKeyFromPath(pathToCheck["path"])
+        nodeClassPath = getKeyFromPath(pathToCheck)
         rootNode = nodes[nodeClassPath]
         
         mainClassCheckEntropy = calculateEntropyFromDataset(classToCheck, currentDataset)
@@ -157,7 +140,7 @@ def getNodesFromDataset(dataset : list[dict], classToCheck : str):
             if classInformationGain > bestFittingClass["infoGain"]:
                 bestFittingClass = {"class":dClass,"infoGain":classInformationGain,"entropys":classEntropys}
 
-        rootNode.classValue = bestFittingClass["class"]
+        rootNode.Class = bestFittingClass["class"]
 
         #print(f"{pathToCheck} :: {bestFittingClass['class']}")
 
@@ -170,8 +153,8 @@ def getNodesFromDataset(dataset : list[dict], classToCheck : str):
             newNode = Node("NaN")
             rootNode.addChild(classValueToExpand, newNode)
             pathToAdd = copy.deepcopy(pathToCheck)
-            pathToAdd["path"].append({bestFittingClass["class"]:classValueToExpand})
-            nodesKeyPath = getKeyFromPath(pathToAdd["path"])
+            pathToAdd.append({bestFittingClass["class"]:classValueToExpand})
+            nodesKeyPath = getKeyFromPath(pathToAdd)
             nodes[nodesKeyPath] = newNode
             pathsToCheck.append(pathToAdd)
 
@@ -201,5 +184,11 @@ if __name__ == "__main__":
     with open("nodesOutput.data", "wb") as f:
         pickle.dump(nodes, f)
 
-    renderNodes(nodes[""],1,"Play")
+    renderNodes(nodes[""],1,"quality")
+
+    randomEntry = random.choice(loadedDataset)
+
+    result = getResultOfDatasetEntry(randomEntry, nodes[""])
+
+    print(f"Random Entry: {randomEntry} Result: {result}")
 
