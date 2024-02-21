@@ -9,7 +9,7 @@ FONT = [pygame.font.SysFont("arialrounded", x) for x in range(1, 100)]
 
 SCREEN_SIZE = Vector2(800, 600)
 
-DISTRIBUTION_WIDTH = 400
+DISTRIBUTION_WIDTH = 800
 DISTRIBUTION_HEIGHT_GAP = 150
 
 class Object:
