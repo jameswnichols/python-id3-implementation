@@ -7,10 +7,10 @@ import shutil
 TERMINAL_SIZE = shutil.get_terminal_size((80, 20))
 
 class Node:
-    def __init__(self, paramClass):
+    def __init__(self, classValue):
         self.children = {}
         self.decisions = {}
-        self.paramClass = paramClass
+        self.classValue = classValue
         self.parentClass = ""
     
     def addChild(self, value, node):
@@ -18,7 +18,7 @@ class Node:
         #self.parentClassValue = value# = #list(dict.fromkeys(self.parentClassValue))
 
     def addDecision(self, classValue, result):
-        self.decisions [classValue] = [result]
+        self.decisions [classValue] = result
         # if classValue not in self.decisions:
         #     self.decisions [classValue] = [result]
         # else:
@@ -96,13 +96,17 @@ def getValuesLeavesExpandFromBestClass(bestFittingClass : dict):
             expand.append(value)
     return leaves, expand
 
-def renderNodes(node : Node, indent : int, checkClassName : str):
-    spacing = "  " * (indent - 1) + f"If {node.parentClass} = {node.parentClassValue}; check " if node.parentClassValue else "↳ "
-    print(spacing + node.paramClass)
+def renderNodes(node : Node, indent : int, checkClassName : str, parentClass = None, parentClassValue = None):
+
+    classValueString = f"If {parentClass} = {parentClassValue}; " if parentClassValue and parentClass else ""
+
+    print("  " * (indent - 1) + f"{classValueString}Check {node.classValue}:")
+    # spacing = "  " * (indent - 1) + f"If {node.parentClass} = {node.parentClassValue}; check " if node.parentClassValue else "↳ "
+    # print(spacing + node.classValue)
     for classValue, result in node.decisions.items():
-        print("  " * (indent) + f"↳ If {node.paramClass} = {classValue}; {checkClassName} = {result} - END")
-    for _, childNode in node.children.items():
-        renderNodes(childNode, indent + 1, checkClassName)
+        print("  " * (indent) + f"If {node.classValue} = {classValue}; {checkClassName} = {result}")
+    for pathValue, childNode in node.children.items():
+        renderNodes(childNode, indent + 1, checkClassName,node.classValue ,pathValue)
 
 def getKeyFromPath(path : list[dict]):
     nodeClassPathList = []
@@ -126,10 +130,10 @@ def getNodesFromDataset(dataset : list[dict], classToCheck : str):
     lastLine = ""
 
     while len(pathsToCheck) > 0:
-        #print(" "*len(lastLine),end="\r")
+        print(" "*len(lastLine),end="\r")
         elapsedTime = time.time() - startTime
         lastLine = f"Time Elapsed: {round(elapsedTime,2)}s // Nodes Created: {len(nodes)} // Paths Checked: {valuesChecked}"
-        #print(lastLine,end="\r")
+        print(lastLine,end="\r")
         valuesChecked += 1
         pathToCheck = pathsToCheck.pop(0)
 
@@ -153,7 +157,9 @@ def getNodesFromDataset(dataset : list[dict], classToCheck : str):
             if classInformationGain > bestFittingClass["infoGain"]:
                 bestFittingClass = {"class":dClass,"infoGain":classInformationGain,"entropys":classEntropys}
 
-        print(f"{pathToCheck} :: {bestFittingClass['class']}")
+        rootNode.classValue = bestFittingClass["class"]
+
+        #print(f"{pathToCheck} :: {bestFittingClass['class']}")
 
         classValueLeaves, classValuesToExpand = getValuesLeavesExpandFromBestClass(bestFittingClass)
 
@@ -161,7 +167,7 @@ def getNodesFromDataset(dataset : list[dict], classToCheck : str):
             rootNode.addDecision(classValueLeaf["value"], classValueLeaf["result"])
 
         for classValueToExpand in classValuesToExpand:
-            newNode = Node(bestFittingClass['class'])
+            newNode = Node("NaN")
             rootNode.addChild(classValueToExpand, newNode)
             pathToAdd = copy.deepcopy(pathToCheck)
             pathToAdd["path"].append({bestFittingClass["class"]:classValueToExpand})
@@ -169,25 +175,6 @@ def getNodesFromDataset(dataset : list[dict], classToCheck : str):
             nodes[nodesKeyPath] = newNode
             pathsToCheck.append(pathToAdd)
 
-        # if bestFittingClass["class"] not in nodes:
-        #     nodes[bestFittingClass["class"]] = Node(bestFittingClass["class"])
-        #     newNode = nodes[bestFittingClass["class"]]
-        #     newNode.addParentClassValue(nodePathValue)
-        #     classValueCheck.addClassValue(rootNode.paramClass, nodePathValue)
-        #     newNode.parentClass = rootNode.paramClass
-        #     rootNode.addChild(nodePathValue, newNode)
-        # else:
-        #     newNode = nodes[bestFittingClass["class"]]
-        #     if classValueCheck.canUseClassValue(rootNode.paramClass, nodePathValue) and rootNode.paramClass == newNode.parentClass:
-        #         classValueCheck.addClassValue(rootNode.paramClass, nodePathValue)
-        #         newNode.addParentClassValue(nodePathValue)
-
-         
-        # for classValueLeaf in classValueLeaves:
-        #     if classValueCheck.canUseClassValue(classValueLeaf["value"], classValueLeaf["result"]):
-        #         newNode.addDecision(classValueLeaf["value"], classValueLeaf["result"])
-        #         classValueCheck.addClassValue(rootNode.paramClass, classValueLeaf["result"])
-        
     print("\n")
     return nodes
 
@@ -206,7 +193,7 @@ def extractDatasetFromCSV(filename):
     return dataset
 
 if __name__ == "__main__":
-    loadedDataset = extractDatasetFromCSV("tennisDataset.csv")
+    loadedDataset = extractDatasetFromCSV("courseworkDataset.csv")
     checkClass = list(loadedDataset[0].keys())[-1]
 
     nodes = getNodesFromDataset(loadedDataset, checkClass)
@@ -214,5 +201,5 @@ if __name__ == "__main__":
     with open("nodesOutput.data", "wb") as f:
         pickle.dump(nodes, f)
 
-    #renderNodes(nodes[""],1,"quality")
+    renderNodes(nodes[""],1,"Play")
 
