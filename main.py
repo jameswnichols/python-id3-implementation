@@ -267,9 +267,9 @@ if __name__ == "__main__":
     checkClass = list(loadedDataset[0].keys())[-1]
     #0.7, 0.2, 0.04, 0.04
 
-    testDatasetPercentages(loadedDataset, checkClass, [1.0, 0.75, 0.5, 0.25, 0.1, 0.05, 0.01], 5)
+    #testDatasetPercentages(loadedDataset, checkClass, [1.0, 0.75, 0.5, 0.25, 0.1, 0.05, 0.01], 5)
 
-    #testDatabaseRatio(loadedDataset, checkClass, {"unacc":0.7, "acc":0.22, "good":0.04, "vgood":0.04}, 100, 100)
+    testDatabaseRatio(loadedDataset, checkClass, {"unacc":0.7, "acc":0.22, "good":0.04, "vgood":0.04}, 100, 100)
 
     # nodes = getNodesFromDataset(loadedDataset, checkClass)
 
