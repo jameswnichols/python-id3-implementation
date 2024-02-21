@@ -103,23 +103,19 @@ def getNodesFromDataset(dataset : list[dict], classToCheck : str):
     classToCheckValues = getPossibleClassValuesFromDataset(classToCheck, dataset)
 
     nodes = {"":Node("Root")}
-    #rootNode = nodes["Root"]
-
-    #pathsToCheck = [{"node":"shape","path":[{"shape":"cylinder"}]}]
     pathsToCheck = [[]]
     valuesChecked = 0
 
     startTime = time.time()
     lastLine = ""
-
     while len(pathsToCheck) > 0:
         print(" "*len(lastLine),end="\r")
         elapsedTime = time.time() - startTime
         lastLine = f"Time Elapsed: {round(elapsedTime,2)}s // Nodes Created: {len(nodes)} // Paths Checked: {valuesChecked} // Percentage Complete: {round((valuesChecked/len(nodes))*100,2)}%"
         print(lastLine,end="\r")
         valuesChecked += 1
-        pathToCheck = pathsToCheck.pop(0)
 
+        pathToCheck = pathsToCheck.pop(0)
         currentDataset = copy.deepcopy(dataset)
 
         #Filter Dataset Down
@@ -134,7 +130,6 @@ def getNodesFromDataset(dataset : list[dict], classToCheck : str):
 
         bestFittingClass = {"class":"NaN","infoGain":-100.0}
         for dClass in classesToCheck:
-            
             classEntropys = calculateClassValueEntropyFromDataset(dClass, currentDataset, classToCheck, classToCheckValues)
             classInformationGain = calculateClassInformationGainFromDataset(classEntropys, dataset, mainClassCheckEntropy)
             if classInformationGain > bestFittingClass["infoGain"]:
@@ -142,13 +137,9 @@ def getNodesFromDataset(dataset : list[dict], classToCheck : str):
 
         rootNode.Class = bestFittingClass["class"]
 
-        #print(f"{pathToCheck} :: {bestFittingClass['class']}")
-
         classValueLeaves, classValuesToExpand = getValuesLeavesExpandFromBestClass(bestFittingClass)
-
         for classValueLeaf in classValueLeaves:
             rootNode.addDecision(classValueLeaf["value"], classValueLeaf["result"])
-
         for classValueToExpand in classValuesToExpand:
             newNode = Node("NaN")
             rootNode.addChild(classValueToExpand, newNode)
@@ -157,6 +148,11 @@ def getNodesFromDataset(dataset : list[dict], classToCheck : str):
             nodesKeyPath = getKeyFromPath(pathToAdd)
             nodes[nodesKeyPath] = newNode
             pathsToCheck.append(pathToAdd)
+
+    print(" "*len(lastLine),end="\r")
+    elapsedTime = time.time() - startTime
+    lastLine = f"Time Elapsed: {round(elapsedTime,2)}s // Nodes Created: {len(nodes)} // Paths Checked: {valuesChecked} // Percentage Complete: {round((valuesChecked/len(nodes))*100,2)}%"
+    print(lastLine,end="\r")
 
     print("\n")
     return nodes
@@ -175,20 +171,42 @@ def extractDatasetFromCSV(filename):
         dataset.append(lineData)
     return dataset
 
+def validateDataset(dataset : list[dict], nodes : dict[Node], checkClass : str):
+    valid = 0
+    for i, entry in enumerate(dataset):
+        if entry[checkClass] == getResultOfDatasetEntry(entry, nodes[""]):
+            valid += 1
+
+    return valid, len(dataset)
+
+def testDatasetSize(dataset : list[dict], checkClass : str, percentages : list[float]):
+    #Takes a list of and creates a tree based on x% of the dataset, then validates it.
+    for percentage in percentages:
+        print(f"Testing with {round(len(dataset)*percentage)} items ({round(percentage*100, 2)}% of the dataset).")
+        newDataset = copy.deepcopy(dataset)
+        random.shuffle(newDataset)
+        newDataset = newDataset[:round(len(newDataset)*percentage)]
+        nodes = getNodesFromDataset(newDataset, checkClass)
+        valid, total = validateDataset(dataset, nodes, checkClass)
+        print(f"Valid: {valid}/{total} ({round((valid/total)*100,2)}%).\n")
+
 if __name__ == "__main__":
     loadedDataset = extractDatasetFromCSV("courseworkDataset.csv")
     checkClass = list(loadedDataset[0].keys())[-1]
 
-    nodes = getNodesFromDataset(loadedDataset, checkClass)
+    # nodes = getNodesFromDataset(loadedDataset, checkClass)
 
-    with open("nodesOutput.data", "wb") as f:
-        pickle.dump(nodes, f)
+    # with open("nodesOutput.data", "wb") as f:
+    #     pickle.dump(nodes, f)
 
-    renderNodes(nodes[""],1,"quality")
+    #renderNodes(nodes[""],1,"quality")
+    testDatasetSize(loadedDataset, checkClass, [1.0, 0.75, 0.5, 0.25, 0.1, 0.05, 0.01])
 
-    randomEntry = random.choice(loadedDataset)
+    # randomEntry = random.choice(loadedDataset)
+    # valid = 0
+    # for i, entry in enumerate(loadedDataset):
+    #     if entry[checkClass] == getResultOfDatasetEntry(entry, nodes[""]):
+    #         valid += 1
 
-    result = getResultOfDatasetEntry(randomEntry, nodes[""])
-
-    print(f"Random Entry: {randomEntry} Result: {result}")
+    # print(f"Valid: {valid}/{len(loadedDataset)} ({round((valid/len(loadedDataset))*100,2)}%)")
 
