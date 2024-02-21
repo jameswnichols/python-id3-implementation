@@ -245,14 +245,13 @@ def testDatabaseRatio(dataset : list[dict], checkClass : str, ratios : dict, amo
         print(f"Valid: {valid}/{total} ({round((valid/total)*100,2)}%)")
 
     average = sum(averageValues)/len(averageValues)
-    print(f"Averages for {runs} runs ({round(time.time()-timeRunsStart,2)}s):")
-    print(f"Average for {amountOfEachText}: Valid: {round(average)}/{len(dataset)} ({round((average/len(dataset))*100,2)}%)")
+    print(f"\nAverage for {runs} runs of {amountOfEachText} ({round(time.time()-timeRunsStart,2)}s): Valid: {round(average)}/{len(dataset)} ({round((average/len(dataset))*100,2)}%)")
 
 if __name__ == "__main__":
     loadedDataset = extractDatasetFromCSV("courseworkDataset.csv")
     checkClass = list(loadedDataset[0].keys())[-1]
-
-    testDatabaseRatio(loadedDataset, checkClass, {"unacc":0.7, "acc":0.2, "good":0.04, "vgood":0.04}, 100)
+    #0.7, 0.2, 0.04, 0.04
+    testDatabaseRatio(loadedDataset, checkClass, {"unacc":0.7, "acc":0.22, "good":0.04, "vgood":0.04}, 50, 100)
 
     # nodes = getNodesFromDataset(loadedDataset, checkClass)
 
