@@ -196,6 +196,8 @@ def getSetAmountFromDataset(dataset : list[dict], checkClass : str, amountOfEach
 def testDatasetPercentages(dataset : list[dict], checkClass : str, percentages : list[float], runs : int = 1):
     #Takes a list of percentages and creates a tree based on x% of the dataset, then validates it.
 
+    #bestTree = {"percentage":0, "nodes":{}}
+
     #1.0 -> {"valid":0, "total":0}
     percentageAverages = {}
     timeRunsStart = time.time()
@@ -219,6 +221,9 @@ def testDatasetPercentages(dataset : list[dict], checkClass : str, percentages :
                 percentageAverages[percentage]["valid"] += valid
                 percentageAverages[percentage]["total"] += 1
             
+            # if valid/total > bestTree["percentage"]:
+            #     bestTree = {"percentage":valid/total, "nodes":nodes}
+            
             print(f"Valid: {valid}/{total} ({round((valid/total)*100,2)}%).\n")
     
     print(f"Averages for {runs} runs ({round(time.time()-timeRunsStart,2)}s):")
@@ -226,11 +231,15 @@ def testDatasetPercentages(dataset : list[dict], checkClass : str, percentages :
         averageValid = (data['valid']/data['total'])
         averagePercentage = round((averageValid/len(dataset))*100,2)
         print(f"Average for {round(percentage*100, 2)}%: Valid: {round(averageValid,2)} / {len(dataset)} ({averagePercentage}%)")
+    # print(f"Best result was {round(bestTree['percentage']*100,2)}% valid, rendered below:")
+    # renderNodes(bestTree["nodes"][""], 1, checkClass)
 
 def testDatabaseRatio(dataset : list[dict], checkClass : str, ratios : dict, amount : int, runs : int = 1):
     #Takes a dictionary of ratios and creates a tree based on the ratio of the dataset, then validates it.
     amountOfEach = {k:math.floor(v*amount) for k,v in ratios.items()}
     amountOfEachText = ", ".join([f"{k} x {v}" for k,v in amountOfEach.items()])
+
+    bestTree = {"percentage":0, "nodes":{}}
 
     averageValues = []
     timeRunsStart = time.time()
@@ -242,16 +251,25 @@ def testDatabaseRatio(dataset : list[dict], checkClass : str, ratios : dict, amo
         valid, total = validateDataset(loadedDataset, nodes, checkClass)
         averageValues.append(valid)
 
+        if valid/total > bestTree["percentage"]:
+            bestTree = {"percentage":valid/total, "nodes":nodes}
+
         print(f"Valid: {valid}/{total} ({round((valid/total)*100,2)}%)")
 
     average = sum(averageValues)/len(averageValues)
     print(f"\nAverage for {runs} runs of {amountOfEachText} ({round(time.time()-timeRunsStart,2)}s): Valid: {round(average)}/{len(dataset)} ({round((average/len(dataset))*100,2)}%)")
 
+    print(f"Best result was {round(bestTree['percentage']*100,2)}% valid, rendered below:")
+    renderNodes(bestTree["nodes"][""], 1, checkClass)
+
 if __name__ == "__main__":
     loadedDataset = extractDatasetFromCSV("courseworkDataset.csv")
     checkClass = list(loadedDataset[0].keys())[-1]
     #0.7, 0.2, 0.04, 0.04
-    testDatabaseRatio(loadedDataset, checkClass, {"unacc":0.7, "acc":0.22, "good":0.04, "vgood":0.04}, 50, 100)
+
+    testDatasetPercentages(loadedDataset, checkClass, [1.0, 0.75, 0.5, 0.25, 0.1, 0.05, 0.01], 5)
+
+    #testDatabaseRatio(loadedDataset, checkClass, {"unacc":0.7, "acc":0.22, "good":0.04, "vgood":0.04}, 100, 100)
 
     # nodes = getNodesFromDataset(loadedDataset, checkClass)
 
