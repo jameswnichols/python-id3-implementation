@@ -18,16 +18,24 @@ class Node:
         self.decisions [classValue] = result
 
 def calculateEntropyFromDataset(parameter : str, dataset : list[dict]):
-  probabilities = {}
-  paramValues = [row[parameter] for row in dataset]
-  for x in list(dict.fromkeys(paramValues)):
-    probabilities[x] = paramValues.count(x)/len(paramValues)
-  return -sum([prob * math.log2(prob) for x, prob in probabilities.items()])
+    probabilities = {}
+    #Get every value in the dataset from the corosponding parameter.
+    paramValues = [row[parameter] for row in dataset]
+    #list(dict.fromkeys(x)) removes duplicate values while preserving order.
+    for x in list(dict.fromkeys(paramValues)):
+        #Calculate the probability of each unique value.
+        probabilities[x] = paramValues.count(x)/len(paramValues)
+
+    #Calculate the entropy of the value.
+    return -sum([prob * math.log2(prob) for prob in probabilities.values()])
 
 def calculateClassValueEntropyFromDataset(paramClass : str, dataset : list[dict], checkClass : str, checkClassValues : list[str]):
+    #Get all unique values for the parameter class.
     paramValues = list(dict.fromkeys([row[paramClass] for row in dataset]))
+    #Construct a dictionary where each parameter class value has an inner dictionary with each unique root class value and a count.
     paramProb = {pV : {cV : 0 for cV in checkClassValues} for pV in paramValues}
     for row in dataset:
+        #Increase the count of the parameter class' root class value.
         paramProb[row[paramClass]][row[checkClass]] += 1
     paramEntropys = {}
     for paramVal, checkResults in paramProb.items():
@@ -269,20 +277,3 @@ if __name__ == "__main__":
     #testDatasetPercentages(loadedDataset, checkClass, [1.0, 0.75, 0.5, 0.25, 0.1, 0.05, 0.01], 5)
 
     testDatabaseRatio(dataset=loadedDataset, checkClass=checkClass, ratios={"unacc":0.7, "acc":0.22, "good":0.04, "vgood":0.04}, amount=25, runs=1500, testFileName="Outputs/noMinimum25", useOneMinimum=False)
-
-    # nodes = getNodesFromDataset(loadedDataset, checkClass)
-
-    # with open("nodesOutput.data", "wb") as f:
-    #     pickle.dump(nodes, f)
-
-    #renderNodes(nodes[""],1,"quality")
-    #testDatasetSize(loadedDataset, checkClass, [1.0, 0.75, 0.5, 0.25, 0.1, 0.05, 0.01], 5)
-
-    # randomEntry = random.choice(loadedDataset)
-    # valid = 0
-    # for i, entry in enumerate(loadedDataset):
-    #     if entry[checkClass] == getResultOfDatasetEntry(entry, nodes[""]):
-    #         valid += 1
-
-    # print(f"Valid: {valid}/{len(loadedDataset)} ({round((valid/len(loadedDataset))*100,2)}%)")
-
