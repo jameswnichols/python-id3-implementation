@@ -2,18 +2,14 @@ import math
 import copy
 import pickle
 import time
-import shutil
 import random
 import math
-
-TERMINAL_SIZE = shutil.get_terminal_size((80, 20))
 
 class Node:
     def __init__(self, classValue):
         self.children = {}
         self.decisions = {}
         self.Class = classValue
-        self.parentClass = ""
     
     def addChild(self, value, node):
         self.children[value] = node
@@ -272,7 +268,7 @@ if __name__ == "__main__":
 
     #testDatasetPercentages(loadedDataset, checkClass, [1.0, 0.75, 0.5, 0.25, 0.1, 0.05, 0.01], 5)
 
-    testDatabaseRatio(dataset=loadedDataset, checkClass=checkClass, ratios={"unacc":0.7, "acc":0.22, "good":0.04, "vgood":0.04}, amount=10, runs=1500, testFileName="tenTotal", useOneMinimum=False)
+    testDatabaseRatio(dataset=loadedDataset, checkClass=checkClass, ratios={"unacc":0.7, "acc":0.22, "good":0.04, "vgood":0.04}, amount=25, runs=1500, testFileName="Outputs/noMinimum25", useOneMinimum=False)
 
     # nodes = getNodesFromDataset(loadedDataset, checkClass)
 
