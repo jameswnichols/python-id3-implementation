@@ -234,9 +234,9 @@ def testDatasetPercentages(dataset : list[dict], checkClass : str, percentages :
     # print(f"Best result was {round(bestTree['percentage']*100,2)}% valid, rendered below:")
     # renderNodes(bestTree["nodes"][""], 1, checkClass)
 
-def testDatabaseRatio(dataset : list[dict], checkClass : str, ratios : dict, amount : int, runs : int = 1):
+def testDatabaseRatio(dataset : list[dict], checkClass : str, ratios : dict, amount : int, runs : int = 1, testFileName : str = None, useOneMinimum : bool = True):
     #Takes a dictionary of ratios and creates a tree based on the ratio of the dataset, then validates it.
-    amountOfEach = {k:max(math.floor(v*amount), 1) for k,v in ratios.items()}
+    amountOfEach = {k:max(math.floor(v*amount), 1 if useOneMinimum else 0) for k,v in ratios.items()}
     amountOfEachText = ", ".join([f"{k} x {v}" for k,v in amountOfEach.items()])
 
     bestTree = {"percentage":0, "nodes":{}}
@@ -261,6 +261,9 @@ def testDatabaseRatio(dataset : list[dict], checkClass : str, ratios : dict, amo
 
     print(f"Best result was {round(bestTree['percentage']*100,2)}% valid with {len(bestTree['nodes'])} nodes, rendered below:")
     renderNodes(bestTree["nodes"][""], 1, checkClass)
+    if isinstance(testFileName, str):
+        with open(f"{testFileName}.data", "wb") as f:
+            pickle.dump(bestTree["nodes"], f)
 
 if __name__ == "__main__":
     loadedDataset = extractDatasetFromCSV("courseworkDataset.csv")
@@ -269,7 +272,7 @@ if __name__ == "__main__":
 
     #testDatasetPercentages(loadedDataset, checkClass, [1.0, 0.75, 0.5, 0.25, 0.1, 0.05, 0.01], 5)
 
-    testDatabaseRatio(loadedDataset, checkClass, {"unacc":0.7, "acc":0.22, "good":0.04, "vgood":0.04}, 850, 25)
+    testDatabaseRatio(dataset=loadedDataset, checkClass=checkClass, ratios={"unacc":0.7, "acc":0.22, "good":0.04, "vgood":0.04}, amount=10, runs=1500, testFileName="tenTotal", useOneMinimum=False)
 
     # nodes = getNodesFromDataset(loadedDataset, checkClass)
 
