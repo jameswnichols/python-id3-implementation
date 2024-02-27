@@ -4,7 +4,7 @@ import pickle
 import time
 import random
 import math
-
+import matplotlib.pyplot as plt
 class Node:
     def __init__(self, classValue):
         self.children = {}
@@ -283,14 +283,36 @@ def testDatabaseRatio(dataset : list[dict], checkClass : str, ratios : dict, amo
         with open(f"{testFileName}.data", "wb") as f:
             pickle.dump(bestTree["nodes"], f)
 
+def testDatasetSplitPlot(dataset : list[dict], checkClass : str, splits : list[tuple[float, float]], runs : int = 1):
+    percentages = []
+    nodeCount = []
+    for trainPerc, testPerc in splits:
+        for run in range(runs):
+            print(f"({run+1}/{runs}) of {trainPerc} / {testPerc} split.")
+            trainingDataset, testingDataset = splitDataset(dataset, trainPerc, testPerc)
+            nodes = getNodesFromDataset(trainingDataset, checkClass)
+            valid, total = validateDataset(testingDataset, nodes, checkClass)
+            percentages.append(valid/total)
+            nodeCount.append(len(nodes))
+    
+    plt.xlabel("Node Count")
+    plt.ylabel("Validation Percentage")
+    plt.scatter(nodeCount, percentages)
+    plt.show()
+
+
+
 if __name__ == "__main__":
     loadedDataset = extractDatasetFromCSV("courseworkDataset.csv")
     checkClass = list(loadedDataset[0].keys())[-1]
-    trainingDataset, testingDataset = splitDataset(loadedDataset, 0.1, 0.9)
-    nodes = getNodesFromDataset(trainingDataset, checkClass)
-    valid, total = validateDataset(testingDataset, nodes, checkClass)
-    print(f"Valid: {valid}/{total} ({round((valid/total)*100,2)}%)")
-    renderNodes(nodes[""], 1, checkClass)
+    #, (0.6, 0.4), (0.7, 0.3), (0.8, 0.2), (0.9, 0.1)
+    testDatasetSplitPlot(loadedDataset, checkClass, [(0.1, 0.9), (0.2, 0.8), (0.3, 0.7), (0.4, 0.6), (0.5, 0.5)], 10)
+
+    # trainingDataset, testingDataset = splitDataset(loadedDataset, 0.1, 0.9)
+    # nodes = getNodesFromDataset(trainingDataset, checkClass)
+    # valid, total = validateDataset(testingDataset, nodes, checkClass)
+    # print(f"Valid: {valid}/{total} ({round((valid/total)*100,2)}%)")
+    # renderNodes(nodes[""], 1, checkClass)
 
     # with open("Outputs/fullTree.data", "wb") as f:
     #     pickle.dump(nodes, f)
