@@ -211,86 +211,87 @@ def getSetAmountFromDataset(dataset : list[dict], checkClass : str, amountOfEach
             newDataset.extend(entries[:amountOfEach[value]])
     return newDataset
 
-def testDatasetPercentages(dataset : list[dict], checkClass : str, percentages : list[float], runs : int = 1):
-    #Takes a list of percentages and creates a tree based on x% of the dataset, then validates it.
+# def testDatasetPercentages(dataset : list[dict], checkClass : str, percentages : list[float], runs : int = 1):
+#     #Takes a list of percentages and creates a tree based on x% of the dataset, then validates it.
 
-    #bestTree = {"percentage":0, "nodes":{}}
+#     #bestTree = {"percentage":0, "nodes":{}}
 
-    #1.0 -> {"valid":0, "total":0}
-    percentageAverages = {}
-    timeRunsStart = time.time()
+#     #1.0 -> {"valid":0, "total":0}
+#     percentageAverages = {}
+#     timeRunsStart = time.time()
 
-    for run in range(runs):
-        for percentage in percentages:
-            newDataset = copy.deepcopy(dataset)
-            amountOfDataset = round(len(newDataset)*percentage)
-            print(f"({run+1}/{runs}) Testing with {round(len(dataset)*percentage)} items ({round(percentage*100, 2)}% of the dataset).")
-            if amountOfDataset <= 0:
-                print("Not enough data to test with.")
-                continue
-            random.shuffle(newDataset)
-            newDataset = newDataset[:amountOfDataset]
-            trainingDataset, testingDataset = splitDataset(newDataset, 0.8, 0.2)
-            nodes = getNodesFromDataset(trainingDataset, checkClass)
-            valid, total = validateDataset(testingDataset, nodes, checkClass)
+#     for run in range(runs):
+#         for percentage in percentages:
+#             newDataset = copy.deepcopy(dataset)
+#             amountOfDataset = round(len(newDataset)*percentage)
+#             print(f"({run+1}/{runs}) Testing with {round(len(dataset)*percentage)} items ({round(percentage*100, 2)}% of the dataset).")
+#             if amountOfDataset <= 0:
+#                 print("Not enough data to test with.")
+#                 continue
+#             random.shuffle(newDataset)
+#             newDataset = newDataset[:amountOfDataset]
+#             trainingDataset, testingDataset = splitDataset(newDataset, 0.8, 0.2)
+#             nodes = getNodesFromDataset(trainingDataset, checkClass)
+#             valid, total = validateDataset(testingDataset, nodes, checkClass)
 
-            if percentage not in percentageAverages:
-                percentageAverages[percentage] = {"valid":0, "total":0, "trainingSize":len(trainingDataset),"testingSize":len(testingDataset)}
-            else:
-                percentageAverages[percentage]["valid"] += valid
-                percentageAverages[percentage]["total"] += 1
+#             if percentage not in percentageAverages:
+#                 percentageAverages[percentage] = {"valid":0, "total":0, "trainingSize":len(trainingDataset),"testingSize":len(testingDataset)}
+#             else:
+#                 percentageAverages[percentage]["valid"] += valid
+#                 percentageAverages[percentage]["total"] += 1
             
-            # if valid/total > bestTree["percentage"]:
-            #     bestTree = {"percentage":valid/total, "nodes":nodes}
+#             # if valid/total > bestTree["percentage"]:
+#             #     bestTree = {"percentage":valid/total, "nodes":nodes}
             
-            print(f"Valid: {valid}/{total} ({round((valid/total)*100,2)}%).\n")
+#             print(f"Valid: {valid}/{total} ({round((valid/total)*100,2)}%).\n")
     
-    print(f"Averages for {runs} runs ({round(time.time()-timeRunsStart,2)}s):")
-    for percentage, data in percentageAverages.items():
-        trainingSize, testingSize = data["trainingSize"], data["testingSize"]
-        averageValid = (data['valid']/data['total'])
-        averagePercentage = round((averageValid/testingSize)*100,2)
-        print(f"Average for {round(percentage*100, 2)}%: Valid: {round(averageValid,2)} / {testingSize} ({averagePercentage}%)")
+#     print(f"Averages for {runs} runs ({round(time.time()-timeRunsStart,2)}s):")
+#     for percentage, data in percentageAverages.items():
+#         trainingSize, testingSize = data["trainingSize"], data["testingSize"]
+#         averageValid = (data['valid']/data['total'])
+#         averagePercentage = round((averageValid/testingSize)*100,2)
+#         print(f"Average for {round(percentage*100, 2)}%: Valid: {round(averageValid,2)} / {testingSize} ({averagePercentage}%)")
     # print(f"Best result was {round(bestTree['percentage']*100,2)}% valid, rendered below:")
     # renderNodes(bestTree["nodes"][""], 1, checkClass)
 
-def testDatabaseRatio(dataset : list[dict], checkClass : str, ratios : dict, amount : int = None, runs : int = 1, testFileName : str = None, useOneMinimum : bool = True):
-    #Takes a dictionary of ratios and creates a tree based on the ratio of the dataset, then validates it.
+# def testDatabaseRatio(dataset : list[dict], checkClass : str, ratios : dict, amount : int = None, runs : int = 1, testFileName : str = None, useOneMinimum : bool = True):
+#     #Takes a dictionary of ratios and creates a tree based on the ratio of the dataset, then validates it.
     
-    trainingDataset, testingDataset = splitDataset(dataset, 0.8, 0.2)
+#     trainingDataset, testingDataset = splitDataset(dataset, 0.8, 0.2)
 
-    print(f"{len(trainingDataset)} training, {len(testingDataset)} testing.")
+#     print(f"{len(trainingDataset)} training, {len(testingDataset)} testing.")
 
-    amount = amount if amount and amount < len(trainingDataset) else len(trainingDataset)
+#     amount = amount if amount and amount < len(trainingDataset) else len(trainingDataset)
 
-    amountOfEach = {k:max(math.floor(v*amount), 1 if useOneMinimum else 0) for k,v in ratios.items()}
-    amountOfEachText = ", ".join([f"{k} x {v}" for k,v in amountOfEach.items()])
+#     amountOfEach = {k:max(math.floor(v*amount), 1 if useOneMinimum else 0) for k,v in ratios.items()}
+#     amountOfEachText = ", ".join([f"{k} x {v}" for k,v in amountOfEach.items()])
 
-    bestTree = {"percentage":0, "nodes":{}}
+#     bestTree = {"percentage":0, "nodes":{}}
 
-    averageValues = []
-    timeRunsStart = time.time()
+#     averageValues = []
+#     timeRunsStart = time.time()
 
-    for run in range(runs):
-        print(f"({run+1}/{runs}) Testing with {amountOfEachText} ({round((amount/len(dataset))*100, 2)}% of the dataset).")
-        amountOfEachEntries = getSetAmountFromDataset(trainingDataset, checkClass, amountOfEach)
-        nodes = getNodesFromDataset(amountOfEachEntries, checkClass)
-        valid, total = validateDataset(testingDataset, nodes, checkClass)
-        averageValues.append(valid)
+#     for run in range(runs):
+#         print(f"({run+1}/{runs}) Testing with {amountOfEachText} ({round((amount/len(dataset))*100, 2)}% of the dataset).")
+#         amountOfEachEntries = getSetAmountFromDataset(trainingDataset, checkClass, amountOfEach)
+#         print(amountOfEachEntries)
+#         nodes = getNodesFromDataset(amountOfEachEntries, checkClass)
+#         valid, total = validateDataset(testingDataset, nodes, checkClass)
+#         averageValues.append(valid)
 
-        if valid/total > bestTree["percentage"]:
-            bestTree = {"percentage":valid/total, "nodes":nodes}
+#         if valid/total > bestTree["percentage"]:
+#             bestTree = {"percentage":valid/total, "nodes":nodes}
 
-        print(f"Valid: {valid}/{total} ({round((valid/total)*100,2)}%)")
+#         print(f"Valid: {valid}/{total} ({round((valid/total)*100,2)}%)")
 
-    average = sum(averageValues)/len(averageValues)
-    print(f"\nAverage for {runs} runs of {amountOfEachText} ({round(time.time()-timeRunsStart,2)}s): Valid: {round(average)}/{len(testingDataset)} ({round((average/len(testingDataset))*100,2)}%)")
+#     average = sum(averageValues)/len(averageValues)
+#     print(f"\nAverage for {runs} runs of {amountOfEachText} ({round(time.time()-timeRunsStart,2)}s): Valid: {round(average)}/{len(testingDataset)} ({round((average/len(testingDataset))*100,2)}%)")
 
-    print(f"Best result was {round(bestTree['percentage']*100,2)}% valid with {len(bestTree['nodes'])} nodes, rendered below:")
-    renderNodes(bestTree["nodes"][""], 1, checkClass)
-    if isinstance(testFileName, str):
-        with open(f"{testFileName}.data", "wb") as f:
-            pickle.dump(bestTree["nodes"], f)
+#     print(f"Best result was {round(bestTree['percentage']*100,2)}% valid with {len(bestTree['nodes'])} nodes, rendered below:")
+#     renderNodes(bestTree["nodes"][""], 1, checkClass)
+#     if isinstance(testFileName, str):
+#         with open(f"{testFileName}.data", "wb") as f:
+#             pickle.dump(bestTree["nodes"], f)
 
 if __name__ == "__main__":
     loadedDataset = extractDatasetFromCSV("courseworkDataset.csv")
@@ -300,7 +301,7 @@ if __name__ == "__main__":
     nodes = getNodesFromDataset(trainingDataset, checkClass)
     valid, total = validateDataset(testingDataset, nodes, checkClass)
     print(f"Valid: {valid}/{total} ({round((valid/total)*100,2)}%)")
-    #renderNodes(nodes[""], 1, checkClass)
+    renderNodes(nodes[""], 1, checkClass)
 
     # with open("Outputs/fullTree.data", "wb") as f:
     #     pickle.dump(nodes, f)
@@ -311,4 +312,4 @@ if __name__ == "__main__":
 
     #testDatasetPercentages(loadedDataset, checkClass, [1.0, 0.75, 0.5, 0.25, 0.1, 0.05, 0.01], 50)
 
-    #testDatabaseRatio(dataset=loadedDataset, checkClass=checkClass, ratios={"unacc":0.7, "acc":0.22, "good":0.04, "vgood":0.04}, amount=None, runs=100, testFileName="Outputs/notImportant", useOneMinimum=False)
+    #testDatabaseRatio(dataset=loadedDataset, checkClass=checkClass, ratios={"unacc":0.7, "acc":0.22, "good":0.04, "vgood":0.04}, amount=None, runs=1, testFileName="Outputs/notImportant", useOneMinimum=False)
