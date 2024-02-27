@@ -296,11 +296,11 @@ if __name__ == "__main__":
     loadedDataset = extractDatasetFromCSV("courseworkDataset.csv")
     checkClass = list(loadedDataset[0].keys())[-1]
 
-    # trainingDataset, testingDataset = splitDataset(loadedDataset, 0.8, 0.2)
-    # nodes = getNodesFromDataset(trainingDataset, checkClass)
-    # valid, total = validateDataset(testingDataset, nodes, checkClass)
-    # print(f"Valid: {valid}/{total} ({round((valid/total)*100,2)}%)")
-    # renderNodes(nodes[""], 1, checkClass)
+    trainingDataset, testingDataset = splitDataset(loadedDataset, 0.1, 0.9)
+    nodes = getNodesFromDataset(trainingDataset, checkClass)
+    valid, total = validateDataset(testingDataset, nodes, checkClass)
+    print(f"Valid: {valid}/{total} ({round((valid/total)*100,2)}%)")
+    #renderNodes(nodes[""], 1, checkClass)
 
     # with open("Outputs/fullTree.data", "wb") as f:
     #     pickle.dump(nodes, f)
