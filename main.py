@@ -209,49 +209,6 @@ def getSetAmountFromDataset(dataset : list[dict], checkClass : str, amountOfEach
             newDataset.extend(entries[:amountOfEach[value]])
     return newDataset
 
-# def testDatasetPercentages(dataset : list[dict], checkClass : str, percentages : list[float], runs : int = 1):
-#     #Takes a list of percentages and creates a tree based on x% of the dataset, then validates it.
-
-#     #bestTree = {"percentage":0, "nodes":{}}
-
-#     #1.0 -> {"valid":0, "total":0}
-#     percentageAverages = {}
-#     timeRunsStart = time.time()
-
-#     for run in range(runs):
-#         for percentage in percentages:
-#             newDataset = copy.deepcopy(dataset)
-#             amountOfDataset = round(len(newDataset)*percentage)
-#             print(f"({run+1}/{runs}) Testing with {round(len(dataset)*percentage)} items ({round(percentage*100, 2)}% of the dataset).")
-#             if amountOfDataset <= 0:
-#                 print("Not enough data to test with.")
-#                 continue
-#             random.shuffle(newDataset)
-#             newDataset = newDataset[:amountOfDataset]
-#             trainingDataset, testingDataset = splitDataset(newDataset, 0.8, 0.2)
-#             nodes = getNodesFromDataset(trainingDataset, checkClass)
-#             valid, total = validateDataset(testingDataset, nodes, checkClass)
-
-#             if percentage not in percentageAverages:
-#                 percentageAverages[percentage] = {"valid":0, "total":0, "trainingSize":len(trainingDataset),"testingSize":len(testingDataset)}
-#             else:
-#                 percentageAverages[percentage]["valid"] += valid
-#                 percentageAverages[percentage]["total"] += 1
-            
-#             # if valid/total > bestTree["percentage"]:
-#             #     bestTree = {"percentage":valid/total, "nodes":nodes}
-            
-#             print(f"Valid: {valid}/{total} ({round((valid/total)*100,2)}%).\n")
-    
-#     print(f"Averages for {runs} runs ({round(time.time()-timeRunsStart,2)}s):")
-#     for percentage, data in percentageAverages.items():
-#         trainingSize, testingSize = data["trainingSize"], data["testingSize"]
-#         averageValid = (data['valid']/data['total'])
-#         averagePercentage = round((averageValid/testingSize)*100,2)
-#         print(f"Average for {round(percentage*100, 2)}%: Valid: {round(averageValid,2)} / {testingSize} ({averagePercentage}%)")
-    # print(f"Best result was {round(bestTree['percentage']*100,2)}% valid, rendered below:")
-    # renderNodes(bestTree["nodes"][""], 1, checkClass)
-
 def testDatabaseRatio(dataset : list[dict], checkClass : str, ratios : dict, amount : int = None, runs : int = 1, testFileName : str = None, useOneMinimum : bool = True):
     #Takes a dictionary of ratios and creates a tree based on the ratio of the dataset, then validates it.
     amountOfEach = {k:max(math.floor(v*amount), 1 if useOneMinimum else 0) for k,v in ratios.items()}
@@ -286,15 +243,23 @@ def testDatabaseRatio(dataset : list[dict], checkClass : str, ratios : dict, amo
 def testDatasetSplitPlot(dataset : list[dict], checkClass : str, splits : list[tuple[float, float]], runs : int = 1):
     percentages = []
     nodeCount = []
+
+    bestTree = {"percentage":0, "nodes":{}}
+
     for trainPerc, testPerc in splits:
         for run in range(runs):
             print(f"({run+1}/{runs}) of {trainPerc} / {testPerc} split.")
             trainingDataset, testingDataset = splitDataset(dataset, trainPerc, testPerc)
             nodes = getNodesFromDataset(trainingDataset, checkClass)
             valid, total = validateDataset(testingDataset, nodes, checkClass)
+            if valid/total > bestTree["percentage"]:
+                bestTree = {"percentage":valid/total, "nodes":nodes}
             percentages.append(valid/total)
             nodeCount.append(len(nodes))
     
+    print(f"Best result was {round(bestTree['percentage']*100,2)}% valid with {len(bestTree['nodes'])} nodes, rendered below:")
+    renderNodes(bestTree["nodes"][""], 1, checkClass)
+
     plt.xlabel("Node Count")
     plt.ylabel("Validation Percentage")
     plt.scatter(nodeCount, percentages)
@@ -305,8 +270,8 @@ def testDatasetSplitPlot(dataset : list[dict], checkClass : str, splits : list[t
 if __name__ == "__main__":
     loadedDataset = extractDatasetFromCSV("courseworkDataset.csv")
     checkClass = list(loadedDataset[0].keys())[-1]
-    #, (0.6, 0.4), (0.7, 0.3), (0.8, 0.2), (0.9, 0.1)
-    testDatasetSplitPlot(loadedDataset, checkClass, [(0.1, 0.9), (0.2, 0.8), (0.3, 0.7), (0.4, 0.6), (0.5, 0.5)], 10)
+    #, (0.2, 0.8), (0.3, 0.7), (0.4, 0.6), (0.5, 0.5), (0.6, 0.4), (0.7, 0.3), (0.8, 0.2), (0.9, 0.1)
+    testDatasetSplitPlot(loadedDataset, checkClass, [(0.7, 0.3)], 100)
 
     # trainingDataset, testingDataset = splitDataset(loadedDataset, 0.1, 0.9)
     # nodes = getNodesFromDataset(trainingDataset, checkClass)
