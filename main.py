@@ -25,7 +25,6 @@ def calculateEntropyFromDataset(parameter : str, dataset : list[dict]):
     for x in list(dict.fromkeys(paramValues)):
         #Calculate the probability of each unique value.
         probabilities[x] = paramValues.count(x)/len(paramValues)
-
     #Calculate the entropy of the value.
     return -sum([prob * math.log2(prob) for prob in probabilities.values()])
 
@@ -33,7 +32,7 @@ def calculateClassValueEntropyFromDataset(paramClass : str, dataset : list[dict]
     #Get all unique values for the parameter class.
     paramValues = list(dict.fromkeys([row[paramClass] for row in dataset]))
     #Construct a dictionary where each parameter class value has an inner dictionary with each unique root class value and a count.
-    paramProb = {pV : {cV : 0 for cV in checkClassValues} for pV in paramValues}
+    paramProb = {paramValue : {classValue : 0 for classValue in checkClassValues} for paramValue in paramValues}
     for row in dataset:
         #Increase the count of the parameter class' root class value.
         paramProb[row[paramClass]][row[checkClass]] += 1
@@ -135,7 +134,7 @@ def getNodesFromDataset(dataset : list[dict], classToCheck : str):
         bestFittingClass = {"class":"NaN","infoGain":-100.0}
         for dClass in classesToCheck:
             classEntropys = calculateClassValueEntropyFromDataset(dClass, currentDataset, classToCheck, classToCheckValues)
-            classInformationGain = calculateClassInformationGainFromDataset(classEntropys, dataset, mainClassCheckEntropy)
+            classInformationGain = calculateClassInformationGainFromDataset(classEntropys, currentDataset, mainClassCheckEntropy)
             
             if classInformationGain > bestFittingClass["infoGain"]:
                 bestFittingClass = {"class":dClass,"infoGain":classInformationGain,"entropys":classEntropys}
@@ -190,11 +189,10 @@ def splitDataset(dataset : list[dict], trainingPercentage : float, testingPercen
     trainingDataset = []
     testingDataset = []
     for row in shuffledDataset:
-        if len(testingDataset) < len(shuffledDataset)*testingPercentage:
-            testingDataset.append(row)
-        elif len(trainingDataset) < len(shuffledDataset)*trainingPercentage:
+        if len(trainingDataset) < len(shuffledDataset)*trainingPercentage:
             trainingDataset.append(row)
-    
+        elif len(testingDataset) < len(shuffledDataset)*testingPercentage:
+            testingDataset.append(row)
     return trainingDataset, testingDataset
 
 def getSetAmountFromDataset(dataset : list[dict], checkClass : str, amountOfEach : dict[str, int]):
@@ -254,49 +252,40 @@ def getSetAmountFromDataset(dataset : list[dict], checkClass : str, amountOfEach
     # print(f"Best result was {round(bestTree['percentage']*100,2)}% valid, rendered below:")
     # renderNodes(bestTree["nodes"][""], 1, checkClass)
 
-# def testDatabaseRatio(dataset : list[dict], checkClass : str, ratios : dict, amount : int = None, runs : int = 1, testFileName : str = None, useOneMinimum : bool = True):
-#     #Takes a dictionary of ratios and creates a tree based on the ratio of the dataset, then validates it.
-    
-#     trainingDataset, testingDataset = splitDataset(dataset, 0.8, 0.2)
+def testDatabaseRatio(dataset : list[dict], checkClass : str, ratios : dict, amount : int = None, runs : int = 1, testFileName : str = None, useOneMinimum : bool = True):
+    #Takes a dictionary of ratios and creates a tree based on the ratio of the dataset, then validates it.
+    amountOfEach = {k:max(math.floor(v*amount), 1 if useOneMinimum else 0) for k,v in ratios.items()}
+    amountOfEachText = ", ".join([f"{k} x {v}" for k,v in amountOfEach.items()])
 
-#     print(f"{len(trainingDataset)} training, {len(testingDataset)} testing.")
+    bestTree = {"percentage":0, "nodes":{}}
 
-#     amount = amount if amount and amount < len(trainingDataset) else len(trainingDataset)
+    averageValues = []
+    timeRunsStart = time.time()
 
-#     amountOfEach = {k:max(math.floor(v*amount), 1 if useOneMinimum else 0) for k,v in ratios.items()}
-#     amountOfEachText = ", ".join([f"{k} x {v}" for k,v in amountOfEach.items()])
+    for run in range(runs):
+        print(f"({run+1}/{runs}) Testing with {amountOfEachText} ({round((amount/len(dataset))*100, 2)}% of the dataset).")
+        amountOfEachEntries = getSetAmountFromDataset(dataset, checkClass, amountOfEach)
+        nodes = getNodesFromDataset(amountOfEachEntries, checkClass)
+        valid, total = validateDataset(dataset, nodes, checkClass)
+        averageValues.append(valid)
 
-#     bestTree = {"percentage":0, "nodes":{}}
+        if valid/total > bestTree["percentage"]:
+            bestTree = {"percentage":valid/total, "nodes":nodes}
 
-#     averageValues = []
-#     timeRunsStart = time.time()
+        print(f"Valid: {valid}/{total} ({round((valid/total)*100,2)}%)")
 
-#     for run in range(runs):
-#         print(f"({run+1}/{runs}) Testing with {amountOfEachText} ({round((amount/len(dataset))*100, 2)}% of the dataset).")
-#         amountOfEachEntries = getSetAmountFromDataset(trainingDataset, checkClass, amountOfEach)
-#         print(amountOfEachEntries)
-#         nodes = getNodesFromDataset(amountOfEachEntries, checkClass)
-#         valid, total = validateDataset(testingDataset, nodes, checkClass)
-#         averageValues.append(valid)
+    average = sum(averageValues)/len(averageValues)
+    print(f"\nAverage for {runs} runs of {amountOfEachText} ({round(time.time()-timeRunsStart,2)}s): Valid: {round(average)}/{len(dataset)} ({round((average/len(dataset))*100,2)}%)")
 
-#         if valid/total > bestTree["percentage"]:
-#             bestTree = {"percentage":valid/total, "nodes":nodes}
-
-#         print(f"Valid: {valid}/{total} ({round((valid/total)*100,2)}%)")
-
-#     average = sum(averageValues)/len(averageValues)
-#     print(f"\nAverage for {runs} runs of {amountOfEachText} ({round(time.time()-timeRunsStart,2)}s): Valid: {round(average)}/{len(testingDataset)} ({round((average/len(testingDataset))*100,2)}%)")
-
-#     print(f"Best result was {round(bestTree['percentage']*100,2)}% valid with {len(bestTree['nodes'])} nodes, rendered below:")
-#     renderNodes(bestTree["nodes"][""], 1, checkClass)
-#     if isinstance(testFileName, str):
-#         with open(f"{testFileName}.data", "wb") as f:
-#             pickle.dump(bestTree["nodes"], f)
+    print(f"Best result was {round(bestTree['percentage']*100,2)}% valid with {len(bestTree['nodes'])} nodes, rendered below:")
+    renderNodes(bestTree["nodes"][""], 1, checkClass)
+    if isinstance(testFileName, str):
+        with open(f"{testFileName}.data", "wb") as f:
+            pickle.dump(bestTree["nodes"], f)
 
 if __name__ == "__main__":
     loadedDataset = extractDatasetFromCSV("courseworkDataset.csv")
     checkClass = list(loadedDataset[0].keys())[-1]
-
     trainingDataset, testingDataset = splitDataset(loadedDataset, 0.1, 0.9)
     nodes = getNodesFromDataset(trainingDataset, checkClass)
     valid, total = validateDataset(testingDataset, nodes, checkClass)
@@ -312,4 +301,4 @@ if __name__ == "__main__":
 
     #testDatasetPercentages(loadedDataset, checkClass, [1.0, 0.75, 0.5, 0.25, 0.1, 0.05, 0.01], 50)
 
-    #testDatabaseRatio(dataset=loadedDataset, checkClass=checkClass, ratios={"unacc":0.7, "acc":0.22, "good":0.04, "vgood":0.04}, amount=None, runs=1, testFileName="Outputs/notImportant", useOneMinimum=False)
+    #testDatabaseRatio(dataset=loadedDataset, checkClass=checkClass, ratios={"unacc":0.7, "acc":0.22, "good":0.04, "vgood":0.04}, amount=20, runs=100, testFileName="Outputs/notImportant", useOneMinimum=True)
