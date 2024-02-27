@@ -58,6 +58,7 @@ def generateObjectsFromNodes(nodes : dict[Node], rootNodeName : str):
     allNodes = []
     objects = []
     lines = []
+    
     while len(nodesToAdd) > 0 :
         poppedNode = nodesToAdd.pop(0)
         nodeToAdd, nodePosition, nodeLevel = poppedNode["node"], poppedNode["position"], poppedNode["level"]
@@ -88,7 +89,7 @@ mouseHoldStartPosition = Vector2(0, 0)
 cameraHoldStartPosition = Vector2(0, 0)
 
 nodes = None
-with open("tenTotal.data", "rb") as f:
+with open("Outputs/fullTree.data", "rb") as f:
     nodes = pickle.load(f)
 
 blankSurface = pygame.Surface((25, 25))

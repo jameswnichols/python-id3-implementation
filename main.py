@@ -136,6 +136,7 @@ def getNodesFromDataset(dataset : list[dict], classToCheck : str):
         for dClass in classesToCheck:
             classEntropys = calculateClassValueEntropyFromDataset(dClass, currentDataset, classToCheck, classToCheckValues)
             classInformationGain = calculateClassInformationGainFromDataset(classEntropys, dataset, mainClassCheckEntropy)
+            
             if classInformationGain > bestFittingClass["infoGain"]:
                 bestFittingClass = {"class":dClass,"infoGain":classInformationGain,"entropys":classEntropys}
 
@@ -182,6 +183,19 @@ def validateDataset(dataset : list[dict], nodes : dict[Node], checkClass : str):
             valid += 1
 
     return valid, len(dataset)
+
+def splitDataset(dataset : list[dict], trainingPercentage : float, testingPercentage : float):
+    shuffledDataset = copy.deepcopy(dataset)
+    random.shuffle(shuffledDataset)
+    trainingDataset = []
+    testingDataset = []
+    for row in shuffledDataset:
+        if len(testingDataset) < len(dataset)*testingPercentage:
+            testingDataset.append(row)
+        elif len(trainingDataset) < len(dataset)*trainingPercentage:
+            trainingDataset.append(row)
+    
+    return trainingDataset, testingDataset
 
 def getSetAmountFromDataset(dataset : list[dict], checkClass : str, amountOfEach : dict[str, int]):
     #Takes a dictionary of class values and the amount of each to get from the dataset, then returns a new dataset with that amount of each class value.
@@ -243,16 +257,18 @@ def testDatabaseRatio(dataset : list[dict], checkClass : str, ratios : dict, amo
     amountOfEach = {k:max(math.floor(v*amount), 1 if useOneMinimum else 0) for k,v in ratios.items()}
     amountOfEachText = ", ".join([f"{k} x {v}" for k,v in amountOfEach.items()])
 
+    trainingDataset, testingDataset = splitDataset(dataset, 0.8, 0.2)
+
     bestTree = {"percentage":0, "nodes":{}}
 
     averageValues = []
     timeRunsStart = time.time()
 
     for run in range(runs):
-        print(f"({run+1}/{runs}) Testing with {amountOfEachText} ({round((amount/len(dataset))*100, 2)}% of the dataset).")
-        amountOfEachEntries = getSetAmountFromDataset(dataset, checkClass, amountOfEach)
+        print(f"({run+1}/{runs}) Testing with {amountOfEachText} ({round((amount/len(trainingDataset))*100, 2)}% of the dataset).")
+        amountOfEachEntries = getSetAmountFromDataset(trainingDataset, checkClass, amountOfEach)
         nodes = getNodesFromDataset(amountOfEachEntries, checkClass)
-        valid, total = validateDataset(loadedDataset, nodes, checkClass)
+        valid, total = validateDataset(testingDataset, nodes, checkClass)
         averageValues.append(valid)
 
         if valid/total > bestTree["percentage"]:
@@ -261,7 +277,7 @@ def testDatabaseRatio(dataset : list[dict], checkClass : str, ratios : dict, amo
         print(f"Valid: {valid}/{total} ({round((valid/total)*100,2)}%)")
 
     average = sum(averageValues)/len(averageValues)
-    print(f"\nAverage for {runs} runs of {amountOfEachText} ({round(time.time()-timeRunsStart,2)}s): Valid: {round(average)}/{len(dataset)} ({round((average/len(dataset))*100,2)}%)")
+    print(f"\nAverage for {runs} runs of {amountOfEachText} ({round(time.time()-timeRunsStart,2)}s): Valid: {round(average)}/{len(testingDataset)} ({round((average/len(testingDataset))*100,2)}%)")
 
     print(f"Best result was {round(bestTree['percentage']*100,2)}% valid with {len(bestTree['nodes'])} nodes, rendered below:")
     renderNodes(bestTree["nodes"][""], 1, checkClass)
@@ -272,8 +288,16 @@ def testDatabaseRatio(dataset : list[dict], checkClass : str, ratios : dict, amo
 if __name__ == "__main__":
     loadedDataset = extractDatasetFromCSV("courseworkDataset.csv")
     checkClass = list(loadedDataset[0].keys())[-1]
+
+    # nodes = getNodesFromDataset(loadedDataset, checkClass)
+
+    # with open("Outputs/fullTree.data", "wb") as f:
+    #     pickle.dump(nodes, f)
+
+    # renderNodes(nodes[""], 1, checkClass)
+
     #0.7, 0.2, 0.04, 0.04
 
     #testDatasetPercentages(loadedDataset, checkClass, [1.0, 0.75, 0.5, 0.25, 0.1, 0.05, 0.01], 5)
 
-    testDatabaseRatio(dataset=loadedDataset, checkClass=checkClass, ratios={"unacc":0.7, "acc":0.22, "good":0.04, "vgood":0.04}, amount=25, runs=1500, testFileName="Outputs/noMinimum25", useOneMinimum=False)
+    testDatabaseRatio(dataset=loadedDataset, checkClass=checkClass, ratios={"unacc":0.7, "acc":0.22, "good":0.04, "vgood":0.04}, amount=30, runs=100, testFileName="Outputs/notImportant", useOneMinimum=False)
