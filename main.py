@@ -24,7 +24,8 @@ def calculateEntropyFromDataset(parameter : str, dataset : list[dict]):
     #list(dict.fromkeys(x)) removes duplicate values while preserving order.
     for x in list(dict.fromkeys(paramValues)):
         #Calculate the probability of each unique value.
-        probabilities[x] = paramValues.count(x)/len(paramValues)
+        probabilities[x] = paramValues.count(x)/len(dataset)
+
     #Calculate the entropy of the value.
     return -sum([prob * math.log2(prob) for prob in probabilities.values()])
 
@@ -112,10 +113,10 @@ def getNodesFromDataset(dataset : list[dict], classToCheck : str):
     startTime = time.time()
     lastLine = ""
     while len(pathsToCheck) > 0:
-        print(" "*len(lastLine),end="\r")
-        elapsedTime = time.time() - startTime
-        lastLine = f"Time Elapsed: {round(elapsedTime,2)}s // Nodes Created: {len(nodes)} // Paths Checked: {valuesChecked} // Percentage Complete: {round((valuesChecked/len(nodes))*100,2)}%"
-        print(lastLine,end="\r")
+        # print(" "*len(lastLine),end="\r")
+        # elapsedTime = time.time() - startTime
+        # lastLine = f"Time Elapsed: {round(elapsedTime,2)}s // Nodes Created: {len(nodes)} // Paths Checked: {valuesChecked} // Percentage Complete: {round((valuesChecked/len(nodes))*100,2)}%"
+        # print(lastLine,end="\r")
         valuesChecked += 1
 
         pathToCheck = pathsToCheck.pop(0)
@@ -129,6 +130,7 @@ def getNodesFromDataset(dataset : list[dict], classToCheck : str):
         rootNode = nodes[nodeClassPath]
         
         mainClassCheckEntropy = calculateEntropyFromDataset(classToCheck, currentDataset)
+
         classesToCheck = [x for x in list(currentDataset[0].keys()) if x != classToCheck]
 
         bestFittingClass = {"class":"NaN","infoGain":-100.0}
@@ -265,20 +267,17 @@ def testDatasetSplitPlot(dataset : list[dict], checkClass : str, splits : list[t
     plt.scatter(nodeCount, percentages)
     plt.show()
 
-
-
 if __name__ == "__main__":
-    loadedDataset = extractDatasetFromCSV("courseworkDataset.csv")
+    loadedDataset = extractDatasetFromCSV("tennisDataset.csv")
     checkClass = list(loadedDataset[0].keys())[-1]
     #, (0.2, 0.8), (0.3, 0.7), (0.4, 0.6), (0.5, 0.5), (0.6, 0.4), (0.7, 0.3), (0.8, 0.2), (0.9, 0.1)
-    testDatasetSplitPlot(loadedDataset, checkClass, [(0.7, 0.3)], 100)
+    #testDatasetSplitPlot(loadedDataset, checkClass, [(0.7, 0.3)], 10)
 
-    # trainingDataset, testingDataset = splitDataset(loadedDataset, 0.1, 0.9)
-    # nodes = getNodesFromDataset(trainingDataset, checkClass)
-    # valid, total = validateDataset(testingDataset, nodes, checkClass)
-    # print(f"Valid: {valid}/{total} ({round((valid/total)*100,2)}%)")
-    # renderNodes(nodes[""], 1, checkClass)
-
+    trainingDataset, testingDataset = splitDataset(loadedDataset, 0.1, 0.9)
+    nodes = getNodesFromDataset(loadedDataset, checkClass)
+    valid, total = validateDataset(testingDataset, nodes, checkClass)
+    print(f"Valid: {valid}/{total} ({round((valid/total)*100,2)}%)")
+    renderNodes(nodes[""], 1, checkClass)
     # with open("Outputs/fullTree.data", "wb") as f:
     #     pickle.dump(nodes, f)
 
