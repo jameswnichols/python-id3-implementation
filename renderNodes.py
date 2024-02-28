@@ -89,7 +89,7 @@ mouseHoldStartPosition = Vector2(0, 0)
 cameraHoldStartPosition = Vector2(0, 0)
 
 nodes = None
-with open("Outputs/fullTree.data", "rb") as f:
+with open("Outputs/noMinimum25Retest.data", "rb") as f:
     nodes = pickle.load(f)
 
 blankSurface = pygame.Surface((25, 25))
