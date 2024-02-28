@@ -31,7 +31,6 @@ class Object:
         screen.blit(self.renderSurface, screenPosition)
         screen.blit(self.fontSurface, self.fontSurfacePosition-screenRect.topleft)
     
-    
 class Line:
     def __init__(self, startPosition : Vector2, endPosition : Vector2, text : str):
         self.startPosition = startPosition
@@ -81,7 +80,6 @@ def generateObjectsFromNodes(nodes : dict[Node], rootNodeName : str):
 screen = pygame.display.set_mode(SCREEN_SIZE, vsync=True)
 running = True
 
-
 cameraPosition = Vector2(0, 0)
 cameraRect = pygame.Rect(cameraPosition, SCREEN_SIZE)
 cameraHeld = False
@@ -89,7 +87,7 @@ mouseHoldStartPosition = Vector2(0, 0)
 cameraHoldStartPosition = Vector2(0, 0)
 
 nodes = None
-with open("Outputs/noMinimum25Retest.data", "rb") as f:
+with open("Outputs/fullTree.data", "rb") as f:
     nodes = pickle.load(f)
 
 blankSurface = pygame.Surface((25, 25))

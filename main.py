@@ -3,8 +3,7 @@ import copy
 import pickle
 import time
 import random
-import math
-import matplotlib.pyplot as plt
+#import matplotlib.pyplot as plt
 class Node:
     def __init__(self, classValue):
         self.children = {}
@@ -113,14 +112,14 @@ def getNodesFromDataset(dataset : list[dict], classToCheck : str):
     startTime = time.time()
     lastLine = ""
     while len(pathsToCheck) > 0:
-        # print(" "*len(lastLine),end="\r")
-        # elapsedTime = time.time() - startTime
-        # lastLine = f"Time Elapsed: {round(elapsedTime,2)}s // Nodes Created: {len(nodes)} // Paths Checked: {valuesChecked} // Percentage Complete: {round((valuesChecked/len(nodes))*100,2)}%"
-        # print(lastLine,end="\r")
+        print(" "*len(lastLine),end="\r")
+        elapsedTime = time.time() - startTime
+        lastLine = f"Time Elapsed: {round(elapsedTime,2)}s // Nodes Created: {len(nodes)} // Paths Checked: {valuesChecked} // Percentage Complete: {round((valuesChecked/len(nodes))*100,2)}%"
+        print(lastLine,end="\r")
         valuesChecked += 1
 
+        currentDataset = dataset
         pathToCheck = pathsToCheck.pop(0)
-        currentDataset = copy.deepcopy(dataset)
 
         #Filter Dataset Down
         for path in pathToCheck:
@@ -137,7 +136,6 @@ def getNodesFromDataset(dataset : list[dict], classToCheck : str):
         for dClass in classesToCheck:
             classEntropys = calculateClassValueEntropyFromDataset(dClass, currentDataset, classToCheck, classToCheckValues)
             classInformationGain = calculateClassInformationGainFromDataset(classEntropys, currentDataset, mainClassCheckEntropy)
-            
             if classInformationGain > bestFittingClass["infoGain"]:
                 bestFittingClass = {"class":dClass,"infoGain":classInformationGain,"entropys":classEntropys}
 
@@ -262,13 +260,13 @@ def testDatasetSplitPlot(dataset : list[dict], checkClass : str, splits : list[t
     print(f"Best result was {round(bestTree['percentage']*100,2)}% valid with {len(bestTree['nodes'])} nodes, rendered below:")
     renderNodes(bestTree["nodes"][""], 1, checkClass)
 
-    plt.xlabel("Node Count")
-    plt.ylabel("Validation Percentage")
-    plt.scatter(nodeCount, percentages)
-    plt.show()
+    # plt.xlabel("Node Count")
+    # plt.ylabel("Validation Percentage")
+    # plt.scatter(nodeCount, percentages)
+    # plt.show()
 
 if __name__ == "__main__":
-    loadedDataset = extractDatasetFromCSV("tennisDataset.csv")
+    loadedDataset = extractDatasetFromCSV("courseworkDataset.csv")
     checkClass = list(loadedDataset[0].keys())[-1]
     #, (0.2, 0.8), (0.3, 0.7), (0.4, 0.6), (0.5, 0.5), (0.6, 0.4), (0.7, 0.3), (0.8, 0.2), (0.9, 0.1)
     #testDatasetSplitPlot(loadedDataset, checkClass, [(0.7, 0.3)], 10)
