@@ -3,7 +3,7 @@ import copy
 import pickle
 import time
 import random
-#import matplotlib.pyplot as plt
+
 class Node:
     def __init__(self, classValue):
         self.children = {}
@@ -93,6 +93,7 @@ def getResultOfDatasetEntry(entry : dict, startingNode : Node):
             return nodeToCheck.decisions[entryValue]
         elif entryValue in nodeToCheck.children:
             nodesToCheck.append(nodeToCheck.children[entryValue])
+
     return "NaN"
 
 def getKeyFromPath(path : list[dict]):
@@ -147,8 +148,7 @@ def getNodesFromDataset(dataset : list[dict], classToCheck : str):
         for classValueToExpand in classValuesToExpand:
             newNode = Node("NaN")
             rootNode.addChild(classValueToExpand, newNode)
-            pathToAdd = copy.deepcopy(pathToCheck)
-            pathToAdd.append({bestFittingClass["class"]:classValueToExpand})
+            pathToAdd = pathToCheck + [{bestFittingClass["class"]:classValueToExpand}]
             nodesKeyPath = getKeyFromPath(pathToAdd)
             nodes[nodesKeyPath] = newNode
             pathsToCheck.append(pathToAdd)
@@ -184,7 +184,6 @@ def validateDataset(dataset : list[dict], nodes : dict[Node], checkClass : str):
     return valid, len(dataset)
 
 def splitDataset(dataset : list[dict], trainingPercentage : float, targetClass : str):
-
     targetClassColumn = [row[targetClass] for row in dataset]
     targetClassValues = list(dict.fromkeys(targetClassColumn))
     targetClassValueRatios = {targetClassValue : targetClassColumn.count(targetClassValue)/len(dataset) for targetClassValue in targetClassValues}
@@ -201,24 +200,28 @@ def splitDataset(dataset : list[dict], trainingPercentage : float, targetClass :
             currentOfEach[rowTargetClass] += 1
         else:
             testingDataset.append(row)
+
     return trainingDataset, testingDataset
 
 def testFindBestTree(dataset : list[dict], checkClass : str, trainingSetPercentage : float = 0.8, runs : int = 1):
     startTime = time.time()
-    bestTree = {"percentage":0, "nodes":{}}
+    bestTree = {"percentage":0, "nodes":{}, "accuracy":-100}
     for run in range(runs):
         trainingDataset, testingDataset = splitDataset(dataset, trainingSetPercentage, checkClass)
         nodes = getNodesFromDataset(trainingDataset, checkClass)
         valid, total = validateDataset(testingDataset, nodes, checkClass)
-        if valid/total > bestTree["percentage"]:
-            bestTree = {"percentage":valid/total, "nodes":nodes}
+        accuracy = ((valid/total) * 100) / math.log2(len(nodes))
+        if accuracy > bestTree["accuracy"]:
+            bestTree = {"percentage":valid/total, "nodes":nodes, "accuracy":accuracy}
         print(f"({run+1} / {runs}) Valid: {valid}/{total} ({round((valid/total)*100,2)}%)")
     elapsedTime = time.time() - startTime
-    print(f"Best result of {runs} runs in {round(elapsedTime, 2)}s was {round(bestTree['percentage']*100,2)}% valid with {len(bestTree['nodes'])} nodes, rendered below:")
-    renderNodes(nodes[""], 1, checkClass)
+    print(f"Best result of {runs} runs in {round(elapsedTime, 2)}s was {round(bestTree['percentage']*100,2)}% valid with an efficiency of {round(bestTree['accuracy'],2)} and with {len(bestTree['nodes'])} nodes, rendered below:")
+    renderNodes(bestTree["nodes"][""], 1, checkClass)
 
 
 if __name__ == "__main__":
     loadedDataset = extractDatasetFromCSV("courseworkDataset.csv")
     checkClass = list(loadedDataset[0].keys())[-1]
-    testFindBestTree(dataset=loadedDataset, checkClass=checkClass, trainingSetPercentage=0.05, runs=3000)
+    #performanceTest(dataset=loadedDataset, checkClass=checkClass, trainingSetPercentage=0.8)
+    # for i in range(0, 100):
+    testFindBestTree(dataset=loadedDataset, checkClass=checkClass, trainingSetPercentage=0.025, runs=1500)
