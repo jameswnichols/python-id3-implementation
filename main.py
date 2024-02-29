@@ -112,10 +112,10 @@ def getNodesFromDataset(dataset : list[dict], classToCheck : str):
     startTime = time.time()
     lastLine = ""
     while len(pathsToCheck) > 0:
-        print(" "*len(lastLine),end="\r")
-        elapsedTime = time.time() - startTime
-        lastLine = f"Time Elapsed: {round(elapsedTime,2)}s // Nodes Created: {len(nodes)} // Paths Checked: {valuesChecked} // Percentage Complete: {round((valuesChecked/len(nodes))*100,2)}%"
-        print(lastLine,end="\r")
+        # print(" "*len(lastLine),end="\r")
+        # elapsedTime = time.time() - startTime
+        # lastLine = f"Time Elapsed: {round(elapsedTime,2)}s // Nodes Created: {len(nodes)} // Paths Checked: {valuesChecked} // Percentage Complete: {round((valuesChecked/len(nodes))*100,2)}%"
+        # print(lastLine,end="\r")
         valuesChecked += 1
 
         currentDataset = dataset
@@ -183,15 +183,23 @@ def validateDataset(dataset : list[dict], nodes : dict[Node], checkClass : str):
 
     return valid, len(dataset)
 
-def splitDataset(dataset : list[dict], trainingPercentage : float, testingPercentage : float):
+def splitDataset(dataset : list[dict], trainingPercentage : float, targetClass : str):
+
+    targetClassColumn = [row[targetClass] for row in dataset]
+    targetClassValues = list(dict.fromkeys(targetClassColumn))
+    targetClassValueRatios = {targetClassValue : targetClassColumn.count(targetClassValue)/len(dataset) for targetClassValue in targetClassValues}
+    amountOfEach = {targetClassValue : math.floor(targetClassValueRatio * len(dataset) * trainingPercentage) for targetClassValue, targetClassValueRatio in targetClassValueRatios.items()}
+    currentOfEach = {targetClassValue : 0 for targetClassValue in targetClassValues}
     shuffledDataset = copy.deepcopy(dataset)
     random.shuffle(shuffledDataset)
     trainingDataset = []
     testingDataset = []
     for row in shuffledDataset:
-        if len(trainingDataset) < len(shuffledDataset)*trainingPercentage:
+        rowTargetClass = row[targetClass]
+        if currentOfEach[rowTargetClass] < amountOfEach[rowTargetClass]:
             trainingDataset.append(row)
-        elif len(testingDataset) < len(shuffledDataset)*testingPercentage:
+            currentOfEach[rowTargetClass] += 1
+        else:
             testingDataset.append(row)
     return trainingDataset, testingDataset
 
@@ -271,8 +279,8 @@ if __name__ == "__main__":
     #, (0.2, 0.8), (0.3, 0.7), (0.4, 0.6), (0.5, 0.5), (0.6, 0.4), (0.7, 0.3), (0.8, 0.2), (0.9, 0.1)
     #testDatasetSplitPlot(loadedDataset, checkClass, [(0.7, 0.3)], 10)
 
-    trainingDataset, testingDataset = splitDataset(loadedDataset, 0.1, 0.9)
-    nodes = getNodesFromDataset(loadedDataset, checkClass)
+    trainingDataset, testingDataset = splitDataset(loadedDataset, 0.05, checkClass)
+    nodes = getNodesFromDataset(trainingDataset, checkClass)
     valid, total = validateDataset(testingDataset, nodes, checkClass)
     print(f"Valid: {valid}/{total} ({round((valid/total)*100,2)}%)")
     renderNodes(nodes[""], 1, checkClass)
