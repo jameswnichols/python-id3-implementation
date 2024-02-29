@@ -52,8 +52,8 @@ def filterDataset(dataset : list[dict], path : dict):
     newDataset = []
     for row in dataset:
         if pathKey in row and row[pathKey] == pathValue:
-            newRow = copy.deepcopy(row)
-            del newRow[pathKey]
+            newRow = {k : v for k, v in row.items() if k != pathKey}
+            #del newRow[pathKey]
             newDataset.append(newRow)
     return newDataset
 
