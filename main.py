@@ -16,6 +16,7 @@ class Node:
     def addDecision(self, classValue, result):
         self.decisions [classValue] = result
 
+
 def calculateEntropyFromDataset(parameter : str, dataset : list[dict]):
     probabilities = {}
     #Get every value in the dataset from the corosponding parameter.
@@ -124,6 +125,11 @@ def getNodesFromDataset(dataset : list[dict], classToCheck : str):
         currentDataset = dataset
         pathToCheck = pathsToCheck.pop(0)
 
+        #For each parameter value, get its unique values, e.g. {"buying_price":["vhigh", "high", "med", "low"],"safety":...}
+        paramUniqueValues = {}
+        #For each parameter value, get the number of unique values, e.g. {"buying_price":{"vhigh":10,"high":45,...},"safety":...}
+        paramCounts = {}
+
         #Filter Dataset Down
         for path in pathToCheck:
             currentDataset = filterDataset(currentDataset, path)
@@ -223,9 +229,9 @@ def testFindBestTree(dataset : list[dict], checkClass : str, trainingSetPercenta
     renderNodes(bestTree["nodes"][""], 1, checkClass)
 
 if __name__ == "__main__":
-    loadedDataset = extractDatasetFromCSV("courseworkDataset.csv")
+    loadedDataset = extractDatasetFromCSV("tennisDataset.csv")
     checkClass = list(loadedDataset[0].keys())[-1]
     #nodes = getNodesFromDataset(dataset=loadedDataset, classToCheck=checkClass)
     #performanceTest(dataset=loadedDataset, checkClass=checkClass, trainingSetPercentage=0.8)
     # for i in range(0, 100):
-    testFindBestTree(dataset=loadedDataset, checkClass=checkClass, runs=10, trainingSetPercentage=None)
+    testFindBestTree(dataset=loadedDataset, checkClass=checkClass, runs=10, trainingSetPercentage=0.03)
