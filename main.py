@@ -31,13 +31,15 @@ def calculateEntropyFromDataset(parameter : str, dataset : list[dict]):
 def calculateClassValueEntropyFromDataset(paramClass : str, dataset : list[dict], checkClass : str, checkClassValues : list[str]):
     #Get all unique values for the parameter class.
     paramValues = list(dict.fromkeys([row[paramClass] for row in dataset]))
-    #Construct a dictionary where each parameter class value has an inner dictionary with each unique root class value and a count.
+    #Construct a dictionary where each parameter class value has an inner dictionary with all of the root class' values and a count.
     paramProb = {paramValue : {classValue : 0 for classValue in checkClassValues} for paramValue in paramValues}
     for row in dataset:
         #Increase the count of the parameter class' root class value.
         paramProb[row[paramClass]][row[checkClass]] += 1
     paramEntropys = {}
+
     for paramVal, checkResults in paramProb.items():
+        #Calculate the entropy of each of the parameter class' values.
         valTotal = sum(crV for crV in list(checkResults.values()))
         valProbs = [crV / valTotal for crV in list(checkResults.values())]
         paramEntropy = -sum([prob * math.log2(prob) if prob else 0 for prob in valProbs])
@@ -52,8 +54,8 @@ def filterDataset(dataset : list[dict], path : dict):
     newDataset = []
     for row in dataset:
         if pathKey in row and row[pathKey] == pathValue:
-            newRow = {k : v for k, v in row.items() if k != pathKey}
-            #del newRow[pathKey]
+            newRow = row.copy()#{k : v for k, v in row.items() if k != pathKey}
+            del newRow[pathKey]
             newDataset.append(newRow)
     return newDataset
 
@@ -184,7 +186,7 @@ def validateDataset(dataset : list[dict], nodes : dict[Node], checkClass : str):
     return valid, len(dataset)
 
 def splitDataset(dataset : list[dict], targetClass : str, trainingPercentage : float = None):
-    shuffleDataset = [x for x in dataset]
+    shuffleDataset = dataset.copy()
     random.shuffle(shuffleDataset)
     if not trainingPercentage:
         return shuffleDataset, dataset
@@ -213,17 +215,17 @@ def testFindBestTree(dataset : list[dict], checkClass : str, trainingSetPercenta
         nodes = getNodesFromDataset(trainingDataset, checkClass)
         valid, total = validateDataset(testingDataset, nodes, checkClass)
         accuracy = ((valid/total) * 100) / math.log2(len(nodes))
-        if accuracy > bestTree["accuracy"]:
+        if accuracy > bestTree["accuracy"] and valid / total > 0.8:
             bestTree = {"percentage":valid/total, "nodes":nodes, "accuracy":accuracy}
         print(f"({run+1} / {runs}) Valid: {valid}/{total} ({round((valid/total)*100,2)}%)")
     elapsedTime = time.time() - startTime
-    print(f"Best result of {runs} runs in {round(elapsedTime, 2)}s with {trainingSetPercentage*100}% of the dataset was {round(bestTree['percentage']*100,2)}% valid with an efficiency of {round(bestTree['accuracy'],2)}% and with {len(bestTree['nodes'])} nodes, rendered below:")
+    print(f"Best result of {runs} runs in {round(elapsedTime, 2)}s with {round((trainingSetPercentage*100) if trainingSetPercentage else 100, 2)}% of the dataset was {round(bestTree['percentage']*100,2)}% valid with an efficiency of {round(bestTree['accuracy'],2)}% and with {len(bestTree['nodes'])} nodes, rendered below:")
     renderNodes(bestTree["nodes"][""], 1, checkClass)
-
 
 if __name__ == "__main__":
     loadedDataset = extractDatasetFromCSV("courseworkDataset.csv")
     checkClass = list(loadedDataset[0].keys())[-1]
+    #nodes = getNodesFromDataset(dataset=loadedDataset, classToCheck=checkClass)
     #performanceTest(dataset=loadedDataset, checkClass=checkClass, trainingSetPercentage=0.8)
     # for i in range(0, 100):
-    testFindBestTree(dataset=loadedDataset, checkClass=checkClass, runs=3000, trainingSetPercentage=0.0345)
+    testFindBestTree(dataset=loadedDataset, checkClass=checkClass, runs=10, trainingSetPercentage=None)
