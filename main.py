@@ -3,6 +3,7 @@ import copy
 import pickle
 import time
 import random
+from collections import defaultdict
 
 class Node:
     def __init__(self):
@@ -32,24 +33,19 @@ def calculateEntropyFromDataset(parameter : str, dataset : list[dict]):
 def calculateClassValueEntropyFromDataset(paramClass : str, dataset : list[dict], rootClass : str):
     #Initialise a dictionary where each parameter class value has an inner dictionary with all of the root class' value counts.
     #E.g. for "boot_space": {"small":{"vgood":0,"good":4,"acc":132,"unacc":375},"med":...}
-    paramRootValues = {}
+
+    #Defaultdict calls a function when the key is not found, so lambda is used to create an inner dictionary with a default value of 0.
+    paramRootValues = defaultdict(lambda: defaultdict(int))
     for row in dataset:
+        #Increase the count of the parameter class' root class value.            
+        paramRootValues[row[paramClass]][row[rootClass]] += 1
 
-        #Increase the count of the parameter class' root class value, or create a new entry if it doesn't exist.
-        if row[paramClass] not in paramRootValues:
-            paramRootValues[row[paramClass]] = {}
-
-        if row[rootClass] not in paramRootValues[row[paramClass]]:
-            paramRootValues[row[paramClass]][row[rootClass]] = 1
-        else:
-            paramRootValues[row[paramClass]][row[rootClass]] += 1
-        
     paramEntropys = {}
 
     for paramValue, rootValuesDict in paramRootValues.items():
         rootValues = list(rootValuesDict.values())
         #Calculate the entropy of each of the parameter class' values.
-        valTotal = sum([crV for crV in rootValues])
+        valTotal = sum(rootValues)
         valProbs = [crV / valTotal for crV in rootValues]
         paramEntropy = -sum([prob * math.log2(prob) if prob else 0 for prob in valProbs])
         paramEntropys[paramValue] = {"entropy":paramEntropy,"total":valTotal,"rootValueCounts":rootValuesDict}
