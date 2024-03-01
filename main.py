@@ -17,38 +17,39 @@ class Node:
     def addDecision(self, classValue, result):
         self.decisions [classValue] = result
 
-def calculateClassValueEntropyFromDataset(paramClass : str, dataset : list[dict], rootClass : str, pathItems : list[tuple[str, str]], calculateRootEntropy : bool = False):
+def calculateClassValueEntropysFromDataset(paramClasses : list[str], dataset : list[dict], rootClass : str, pathItems : list[tuple[str, str]]):
     #Initialise a dictionary where each parameter class value has an inner dictionary with all of the root class' value counts.
-    #E.g. for "boot_space": {"small":{"vgood":0,"good":4,"acc":132,"unacc":375},"med":...}
+    #E.g. {"boot_space": {"small":{"vgood":0,"good":4,"acc":132,"unacc":375},"med":...}}
 
     #Defaultdict calls a function when the key is not found, so lambda is used to create an inner dictionary with a default value of 0.
-    paramRootValues = defaultdict(lambda: defaultdict(int))
+    paramRootValues = defaultdict(lambda: defaultdict(lambda: defaultdict(int)))
     rootValueCounts = defaultdict(int)
     datasetLength = 0
     for row in dataset:
         rowItems = row.items()
         if pathItems <= rowItems:
             newRow = dict(rowItems - pathItems)
+            for paramClass in paramClasses:
             #Increase the count of the parameter class' root class value.            
-            paramRootValues[newRow[paramClass]][newRow[rootClass]] += 1
-
-            if calculateRootEntropy:
-                rootValueCounts[newRow[rootClass]] += 1
+                paramRootValues[paramClass][newRow[paramClass]][newRow[rootClass]] += 1
+            rootValueCounts[newRow[rootClass]] += 1
             datasetLength += 1
-    paramEntropys = {}
 
-    for paramValue, rootValuesDict in paramRootValues.items():
-        rootValues = list(rootValuesDict.values())
-        #Calculate the entropy of each of the parameter class' values.
-        valTotal = sum(rootValues)
-        valProbs = [crV / valTotal for crV in rootValues]
-        paramEntropy = -sum([prob * math.log2(prob) if prob else 0 for prob in valProbs])
-        paramEntropys[paramValue] = {"entropy":paramEntropy,"total":valTotal,"rootValueCounts":rootValuesDict}
-
-    if calculateRootEntropy:
+    paramClassEntropys = {}
+    for paramClass, paramRootValueData in paramRootValues.items():
+        paramEntropys = {}
+        for paramValue, rootValuesDict in paramRootValueData.items():
+            rootValues = list(rootValuesDict.values())
+            #Calculate the entropy of each of the parameter class' values.
+            valTotal = sum(rootValues)
+            valProbs = [crV / valTotal for crV in rootValues]
+            paramEntropy = -sum([prob * math.log2(prob) if prob else 0 for prob in valProbs])
+            paramEntropys[paramValue] = {"entropy":paramEntropy,"total":valTotal,"rootValueCounts":rootValuesDict}
+            paramClassEntropys[paramClass] = paramEntropys
         rootEntropy = -sum([((rootValueCount / datasetLength) * math.log2(rootValueCount / datasetLength)) if rootValueCount else 0 for rootValueCount in rootValueCounts.values()])
-        return paramEntropys, rootEntropy, datasetLength
-    return paramEntropys
+
+    return paramClassEntropys, rootEntropy, datasetLength
+    
 
 def calculateClassInformationGainFromDataset(classEntropys : dict, datasetLength : int, rootClassEntropy : float):
     return rootClassEntropy - sum([(cEV["total"]/datasetLength) * cEV["entropy"] for cEV in list(classEntropys.values())])
@@ -120,7 +121,6 @@ def getNodesFromDataset(dataset : list[dict], classToCheck : str):
         parentNode, pathToCheck = pathsToCheck.pop(0)
         pathItems = pathToCheck.items()
 
-        calculatedMainClassEntropy = False
         mainClassCheckEntropy = 0
         datasetLength = 0
 
@@ -128,17 +128,13 @@ def getNodesFromDataset(dataset : list[dict], classToCheck : str):
         classesInDataset.remove(classToCheck)
 
         bestFittingClass = {"infoGain":-100.0}
-        for classInDataset in classesInDataset:
-            if not calculatedMainClassEntropy:
                 #By only reading the dataset rows once per while loop iteration, triples the speed of the algorithm.
-                classEntropys, mainClassCheckEntropy, datasetLength = calculateClassValueEntropyFromDataset(classInDataset, dataset, classToCheck, pathItems, True)
-                calculatedMainClassEntropy = True
-            else:
-                classEntropys = calculateClassValueEntropyFromDataset(classInDataset, dataset, classToCheck, pathItems)
+        paramClassEntropys, mainClassCheckEntropy, datasetLength = calculateClassValueEntropysFromDataset(classesInDataset, dataset, classToCheck, pathItems)
 
+        for paramClass, classEntropys in paramClassEntropys.items():
             classInformationGain = calculateClassInformationGainFromDataset(classEntropys, datasetLength, mainClassCheckEntropy)
             if classInformationGain > bestFittingClass["infoGain"]:
-                bestFittingClass = {"class":classInDataset,"infoGain":classInformationGain,"entropys":classEntropys}
+                bestFittingClass = {"class":paramClass,"infoGain":classInformationGain,"entropys":classEntropys}
         
         parentNode.Class = bestFittingClass["class"]
         classValuesToLeave, classValuesToBranch = getLeavesBranchesFromBestClass(bestFittingClass)
@@ -231,6 +227,8 @@ def testFindBestTree(dataset : list[dict], rootClass : str, rootClassCounts : li
     elapsedTime = time.time() - startTime
     print(f"Best result of {runs} runs in {round(elapsedTime, 2)}s with {round((trainingSetPercentage*100) if trainingSetPercentage else 100, 2)}% of the dataset was {round(bestTree['percentage']*100,2)}% valid with an efficiency of {round(bestTree['efficiency'],2)}% and with {bestTree['totalNodes']} nodes, rendered below:")
     renderNodes(bestTree["rootNode"], 1, rootClass)
+    with open("handwriting.data", "wb") as f:
+        pickle.dump(bestTree["rootNode"], f)
 
 if __name__ == "__main__":
     loadedDataset = extractDatasetFromCSV("courseworkDataset.csv")
