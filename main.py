@@ -5,10 +5,10 @@ import time
 import random
 
 class Node:
-    def __init__(self, classValue):
+    def __init__(self):
         self.children = {}
         self.decisions = {}
-        self.Class = classValue
+        self.Class = "NaN"
     
     def addChild(self, value, node):
         self.children[value] = node
@@ -52,7 +52,7 @@ def calculateClassValueEntropyFromDataset(paramClass : str, dataset : list[dict]
         valTotal = sum([crV for crV in rootValues])
         valProbs = [crV / valTotal for crV in rootValues]
         paramEntropy = -sum([prob * math.log2(prob) if prob else 0 for prob in valProbs])
-        paramEntropys[paramValue] = {"entropy":paramEntropy,"total":valTotal,"results":rootValuesDict}
+        paramEntropys[paramValue] = {"entropy":paramEntropy,"total":valTotal,"rootValueCounts":rootValuesDict}
     return paramEntropys
 
 def calculateClassInformationGainFromDataset(classEntropys : dict, dataset : list[dict], rootClassEntropy : float):
@@ -80,14 +80,19 @@ def getPossibleClassCountsFromDataset(paramClass : str, dataset : list[dict]):
         #possibleClasses.append(row[paramClass])
     return possibleClasses
 
-def getValuesLeavesExpandFromBestClass(bestFittingClass : dict):
+def getLeavesBranchesFromBestClass(bestFittingClass : dict):
     leaves = []
     expand = []
     #Check if multiple values result in the same thing, if so then group them.
     for value, entropyData in bestFittingClass["entropys"].items():
         if entropyData["entropy"] == 0.0:
-            entropyResultValue = [rK for rK, rV in entropyData["results"].items() if rV > 0][0]
-            #allLeafValues.extend(entropyResultValue)
+            #If entropy of value is 0, then the value is a leaf, so find only non-zero root value.
+            entropyResultValue = None
+            for rootValue, rootValueCount in entropyData["rootValueCounts"].items():
+                if rootValueCount > 0:
+                    entropyResultValue = rootValue
+                    break
+
             leaves.append({"value":value,"result":entropyResultValue})
         else:
             expand.append(value)
@@ -114,9 +119,7 @@ def getResultOfDatasetEntry(entry : dict, startingNode : Node):
     return "unacc"
 
 def getNodesFromDataset(dataset : list[dict], classToCheck : str):
-    #classToCheckValues = getPossibleClassValuesFromDataset(classToCheck, dataset)
-
-    rootNode = Node("Root")
+    rootNode = Node()
     pathsToCheck = [(rootNode, {})]
     totalNodes = 1
     valuesChecked = 0
@@ -130,33 +133,32 @@ def getNodesFromDataset(dataset : list[dict], classToCheck : str):
         print(lastLine,end="\r")
         valuesChecked += 1
 
-        currentDataset = dataset
+        #Path to check is a dictionary of class:value pairs to remove e.g. path={"buying_price":"high","boot_space":"small",...}
         parentNode, pathToCheck = pathsToCheck.pop(0)
-
-        currentDataset = filterDataset(currentDataset, pathToCheck)
+        currentDataset = filterDataset(dataset, pathToCheck)
         
         mainClassCheckEntropy = calculateEntropyFromDataset(classToCheck, currentDataset)
 
-        classesToCheck = [x for x in list(currentDataset[0].keys()) if x != classToCheck]
+        classesInDataset = [x for x in list(currentDataset[0].keys()) if x != classToCheck]
 
         bestFittingClass = {"infoGain":-100.0}
-        for dClass in classesToCheck:
-            classEntropys = calculateClassValueEntropyFromDataset(dClass, currentDataset, classToCheck)
+        for classInDataset in classesInDataset:
+            classEntropys = calculateClassValueEntropyFromDataset(classInDataset, currentDataset, classToCheck)
             classInformationGain = calculateClassInformationGainFromDataset(classEntropys, currentDataset, mainClassCheckEntropy)
             if classInformationGain > bestFittingClass["infoGain"]:
-                bestFittingClass = {"class":dClass,"infoGain":classInformationGain,"entropys":classEntropys}
+                bestFittingClass = {"class":classInDataset,"infoGain":classInformationGain,"entropys":classEntropys}
         
         parentNode.Class = bestFittingClass["class"]
-        classValueLeaves, classValuesToExpand = getValuesLeavesExpandFromBestClass(bestFittingClass)
-        for classValueLeaf in classValueLeaves:
+        classValuesToLeave, classValuesToBranch = getLeavesBranchesFromBestClass(bestFittingClass)
+        for classValueLeaf in classValuesToLeave:
             parentNode.addDecision(classValueLeaf["value"], classValueLeaf["result"])
 
-        for classValueToExpand in classValuesToExpand:
+        for classValueToBranch in classValuesToBranch:
             totalNodes += 1
-            newNode = Node("NaN")
-            parentNode.addChild(classValueToExpand, newNode)
+            newNode = Node()
+            parentNode.addChild(classValueToBranch, newNode)
             pathToAdd = pathToCheck.copy()
-            pathToAdd[bestFittingClass["class"]] = classValueToExpand
+            pathToAdd[bestFittingClass["class"]] = classValueToBranch
             pathsToCheck.append((newNode, pathToAdd))
 
     print(" "*len(lastLine),end="\r")
