@@ -46,7 +46,8 @@ def calculateClassValueEntropysFromDataset(paramClasses : list[str], dataset : l
             paramEntropy = -sum([prob * math.log2(prob) if prob else 0 for prob in valProbs])
             paramEntropys[paramValue] = {"entropy":paramEntropy,"total":valTotal,"rootValueCounts":rootValuesDict}
             paramClassEntropys[paramClass] = paramEntropys
-        rootEntropy = -sum([((rootValueCount / datasetLength) * math.log2(rootValueCount / datasetLength)) if rootValueCount else 0 for rootValueCount in rootValueCounts.values()])
+    
+    rootEntropy = -sum([((rootValueCount / datasetLength) * math.log2(rootValueCount / datasetLength)) if rootValueCount else 0 for rootValueCount in rootValueCounts.values()])
 
     return paramClassEntropys, rootEntropy, datasetLength
     
