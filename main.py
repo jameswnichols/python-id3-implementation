@@ -170,11 +170,20 @@ def extractDatasetFromCSV(filename):
     with open(filename, "r") as f:
         fileData = f.readlines()
     classes = fileData[0].strip().split(",")
-    for line in fileData[1:]:
-        lineData = {}
-        for i, value in enumerate(line.strip().split(",")):
-            lineData[classes[i]] = value    
-        dataset.append(lineData)
+    inputLength = len(fileData[1:])
+    lastLine = ""
+    startTime = time.time()
+    for i, line in enumerate(fileData[1:]):
+        print(" "*len(lastLine),end="\r")
+        elapsedTime = time.time() - startTime
+        lastLine = f"Time Elapsed: {round(elapsedTime,2)}s // Lines Processed: {i} / {inputLength} // Percentage Complete: {round((i/inputLength)*100,2)}%"
+        print(lastLine,end="\r")
+        dataset.append(dict(zip(classes, line.strip().split(","))))
+    print(" "*len(lastLine),end="\r")
+    elapsedTime = time.time() - startTime
+    lastLine = f"Time Elapsed: {round(elapsedTime,2)}s // Lines Processed: {i} / {inputLength} // Percentage Complete: {round((i/inputLength)*100,2)}%"
+    print(lastLine,end="\r")
+    print("\n")
     return dataset
 
 def validateDataset(dataset : list[dict], nodes : dict[Node], checkClass : str):
