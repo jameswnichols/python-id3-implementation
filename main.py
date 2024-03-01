@@ -51,12 +51,12 @@ def calculateClassInformationGainFromDataset(classEntropys : dict, dataset : lis
     return checkClassEntropy - sum([(cEV["total"]/len(dataset)) * cEV["entropy"] for cEV in list(classEntropys.values())])
 
 def filterDataset(dataset : list[dict], path : dict):
-    pathKey, pathValue = list(path.items())[0]
     newDataset = []
     for row in dataset:
-        if pathKey in row and row[pathKey] == pathValue:
-            newRow = row.copy()#{k : v for k, v in row.items() if k != pathKey}
-            del newRow[pathKey]
+        #If the row contains all the values in the path e.g. path={"buying_price":"high","boot_space":"small",...} then keep it.
+        if path.items() <= row.items():
+            #Remove the path from the row.
+            newRow = dict(row.items() - path.items())
             newDataset.append(newRow)
     return newDataset
 
@@ -109,8 +109,9 @@ def getKeyFromPath(path : list[dict]):
 def getNodesFromDataset(dataset : list[dict], classToCheck : str):
     classToCheckValues = getPossibleClassValuesFromDataset(classToCheck, dataset)
 
-    nodes = {"":Node("Root")}
-    pathsToCheck = [[]]
+    rootNode = Node("Root")
+    pathsToCheck = [(rootNode, {})]
+    totalNodes = 1
     valuesChecked = 0
 
     startTime = time.time()
@@ -118,56 +119,51 @@ def getNodesFromDataset(dataset : list[dict], classToCheck : str):
     while len(pathsToCheck) > 0:
         print(" "*len(lastLine),end="\r")
         elapsedTime = time.time() - startTime
-        lastLine = f"Time Elapsed: {round(elapsedTime,2)}s // Nodes Created: {len(nodes)} // Paths Checked: {valuesChecked} // Percentage Complete: {round((valuesChecked/len(nodes))*100,2)}%"
+        lastLine = f"Time Elapsed: {round(elapsedTime,2)}s // Nodes Created: {totalNodes} // Paths Checked: {valuesChecked} // Percentage Complete: {round((valuesChecked/totalNodes)*100,2)}%"
         print(lastLine,end="\r")
         valuesChecked += 1
 
         currentDataset = dataset
-        pathToCheck = pathsToCheck.pop(0)
+        parentNode, pathToCheck = pathsToCheck.pop(0)
 
         #For each parameter value, get its unique values, e.g. {"buying_price":["vhigh", "high", "med", "low"],"safety":...}
         paramUniqueValues = {}
         #For each parameter value, get the number of unique values, e.g. {"buying_price":{"vhigh":10,"high":45,...},"safety":...}
         paramCounts = {}
 
-        #Filter Dataset Down
-        for path in pathToCheck:
-            currentDataset = filterDataset(currentDataset, path)
-
-        nodeClassPath = getKeyFromPath(pathToCheck)
-        rootNode = nodes[nodeClassPath]
+        currentDataset = filterDataset(currentDataset, pathToCheck)
         
         mainClassCheckEntropy = calculateEntropyFromDataset(classToCheck, currentDataset)
 
         classesToCheck = [x for x in list(currentDataset[0].keys()) if x != classToCheck]
 
-        bestFittingClass = {"class":"NaN","infoGain":-100.0}
+        bestFittingClass = {"infoGain":-100.0}
         for dClass in classesToCheck:
             classEntropys = calculateClassValueEntropyFromDataset(dClass, currentDataset, classToCheck, classToCheckValues)
             classInformationGain = calculateClassInformationGainFromDataset(classEntropys, currentDataset, mainClassCheckEntropy)
             if classInformationGain > bestFittingClass["infoGain"]:
                 bestFittingClass = {"class":dClass,"infoGain":classInformationGain,"entropys":classEntropys}
-
-        rootNode.Class = bestFittingClass["class"]
-
+        
+        parentNode.Class = bestFittingClass["class"]
         classValueLeaves, classValuesToExpand = getValuesLeavesExpandFromBestClass(bestFittingClass)
         for classValueLeaf in classValueLeaves:
-            rootNode.addDecision(classValueLeaf["value"], classValueLeaf["result"])
+            parentNode.addDecision(classValueLeaf["value"], classValueLeaf["result"])
+
         for classValueToExpand in classValuesToExpand:
+            totalNodes += 1
             newNode = Node("NaN")
-            rootNode.addChild(classValueToExpand, newNode)
-            pathToAdd = pathToCheck + [{bestFittingClass["class"]:classValueToExpand}]
-            nodesKeyPath = getKeyFromPath(pathToAdd)
-            nodes[nodesKeyPath] = newNode
-            pathsToCheck.append(pathToAdd)
+            parentNode.addChild(classValueToExpand, newNode)
+            pathToAdd = pathToCheck.copy()
+            pathToAdd[bestFittingClass["class"]] = classValueToExpand
+            pathsToCheck.append((newNode, pathToAdd))
 
     print(" "*len(lastLine),end="\r")
     elapsedTime = time.time() - startTime
-    lastLine = f"Time Elapsed: {round(elapsedTime,2)}s // Nodes Created: {len(nodes)} // Paths Checked: {valuesChecked} // Percentage Complete: {round((valuesChecked/len(nodes))*100,2)}%"
+    lastLine = f"Time Elapsed: {round(elapsedTime,2)}s // Nodes Created: {totalNodes} // Paths Checked: {valuesChecked} // Percentage Complete: {round((valuesChecked/totalNodes)*100,2)}%"
     print(lastLine,end="\r")
 
     print("\n")
-    return nodes
+    return totalNodes, rootNode
 
 def extractDatasetFromCSV(filename):
     dataset = []
@@ -183,12 +179,11 @@ def extractDatasetFromCSV(filename):
         dataset.append(lineData)
     return dataset
 
-def validateDataset(dataset : list[dict], nodes : dict[Node], checkClass : str):
+def validateDataset(dataset : list[dict], rootNode : dict[Node], checkClass : str):
     valid = 0
-    for i, entry in enumerate(dataset):
-        if entry[checkClass] == getResultOfDatasetEntry(entry, nodes[""]):
+    for row in dataset:
+        if row[checkClass] == getResultOfDatasetEntry(row, rootNode):
             valid += 1
-
     return valid, len(dataset)
 
 def splitDataset(dataset : list[dict], targetClass : str, trainingPercentage : float = None):
@@ -215,23 +210,23 @@ def splitDataset(dataset : list[dict], targetClass : str, trainingPercentage : f
 
 def testFindBestTree(dataset : list[dict], checkClass : str, trainingSetPercentage : float = None, runs : int = 1):
     startTime = time.time()
-    bestTree = {"percentage":0, "nodes":{}, "accuracy":-100}
+    bestTree = {"percentage":0, "rootNode":{}, "accuracy":-100}
     for run in range(runs):
         trainingDataset, testingDataset = splitDataset(dataset, checkClass, trainingSetPercentage)
-        nodes = getNodesFromDataset(trainingDataset, checkClass)
-        valid, total = validateDataset(testingDataset, nodes, checkClass)
-        accuracy = ((valid/total) * 100) / math.log2(len(nodes))
+        totalNodes, rootNode = getNodesFromDataset(trainingDataset, checkClass)
+        valid, total = validateDataset(testingDataset, rootNode, checkClass)
+        accuracy = ((valid/total) * 100) / math.log2(totalNodes)
         if accuracy > bestTree["accuracy"] and valid / total > 0.8:
-            bestTree = {"percentage":valid/total, "nodes":nodes, "accuracy":accuracy}
+            bestTree = {"percentage":valid/total, "rootNode":rootNode, "totalNodes":totalNodes, "accuracy":accuracy}
         print(f"({run+1} / {runs}) Valid: {valid}/{total} ({round((valid/total)*100,2)}%)")
     elapsedTime = time.time() - startTime
-    print(f"Best result of {runs} runs in {round(elapsedTime, 2)}s with {round((trainingSetPercentage*100) if trainingSetPercentage else 100, 2)}% of the dataset was {round(bestTree['percentage']*100,2)}% valid with an efficiency of {round(bestTree['accuracy'],2)}% and with {len(bestTree['nodes'])} nodes, rendered below:")
-    renderNodes(bestTree["nodes"][""], 1, checkClass)
+    print(f"Best result of {runs} runs in {round(elapsedTime, 2)}s with {round((trainingSetPercentage*100) if trainingSetPercentage else 100, 2)}% of the dataset was {round(bestTree['percentage']*100,2)}% valid with an efficiency of {round(bestTree['accuracy'],2)}% and with {bestTree['totalNodes']} nodes, rendered below:")
+    renderNodes(bestTree["rootNode"], 1, checkClass)
 
 if __name__ == "__main__":
-    loadedDataset = extractDatasetFromCSV("tennisDataset.csv")
+    loadedDataset = extractDatasetFromCSV("courseworkDataset.csv")
     checkClass = list(loadedDataset[0].keys())[-1]
     #nodes = getNodesFromDataset(dataset=loadedDataset, classToCheck=checkClass)
     #performanceTest(dataset=loadedDataset, checkClass=checkClass, trainingSetPercentage=0.8)
     # for i in range(0, 100):
-    testFindBestTree(dataset=loadedDataset, checkClass=checkClass, runs=10, trainingSetPercentage=0.03)
+    testFindBestTree(dataset=loadedDataset, checkClass=checkClass, runs=5000, trainingSetPercentage=0.04)
