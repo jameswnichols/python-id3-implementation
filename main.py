@@ -17,19 +17,6 @@ class Node:
     def addDecision(self, classValue, result):
         self.decisions [classValue] = result
 
-
-def calculateEntropyFromDataset(parameter : str, dataset : list[dict]):
-    probabilities = {}
-    #Get every value in the dataset from the corosponding parameter.
-    paramValues = [row[parameter] for row in dataset]
-    #list(dict.fromkeys(x)) removes duplicate values while preserving order.
-    for x in list(dict.fromkeys(paramValues)):
-        #Calculate the probability of each unique value.
-        probabilities[x] = paramValues.count(x)/len(dataset)
-
-    #Calculate the entropy of the value.
-    return -sum([prob * math.log2(prob) for prob in probabilities.values()])
-
 def calculateClassValueEntropyFromDataset(paramClass : str, dataset : list[dict], rootClass : str, pathItems : list[tuple[str, str]], calculateRootEntropy : bool = False):
     #Initialise a dictionary where each parameter class value has an inner dictionary with all of the root class' value counts.
     #E.g. for "boot_space": {"small":{"vgood":0,"good":4,"acc":132,"unacc":375},"med":...}
@@ -65,18 +52,6 @@ def calculateClassValueEntropyFromDataset(paramClass : str, dataset : list[dict]
 
 def calculateClassInformationGainFromDataset(classEntropys : dict, datasetLength : int, rootClassEntropy : float):
     return rootClassEntropy - sum([(cEV["total"]/datasetLength) * cEV["entropy"] for cEV in list(classEntropys.values())])
-
-def filterDataset(dataset : list[dict], path : dict):
-    newDataset = []
-    pathItems = path.items()
-    for row in dataset:
-        rowItems = row.items()
-        #If the row contains all the values in the path e.g. path={"buying_price":"high","boot_space":"small",...} then keep it.
-        if pathItems <= rowItems:
-            #Remove the path from the row.
-            newRow = dict(rowItems - pathItems)
-            newDataset.append(newRow)
-    return newDataset
 
 def getPossibleClassCountsFromDataset(paramClass : str, dataset : list[dict]):
     possibleClasses = {}
