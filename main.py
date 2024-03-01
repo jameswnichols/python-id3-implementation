@@ -94,7 +94,7 @@ def getResultOfDatasetEntry(entry : dict, startingNode : Node):
         elif entryValue in nodeToCheck.children:
             nodesToCheck.append(nodeToCheck.children[entryValue])
 
-    return "NaN"
+    return "unacc"
 
 def getKeyFromPath(path : list[dict]):
     nodeClassPathList = []
@@ -171,7 +171,7 @@ def extractDatasetFromCSV(filename):
     for line in fileData[1:]:
         lineData = {}
         for i, value in enumerate(line.strip().split(",")):
-            lineData[classes[i]] = value
+            lineData[classes[i]] = value    
         dataset.append(lineData)
     return dataset
 
@@ -215,7 +215,7 @@ def testFindBestTree(dataset : list[dict], checkClass : str, trainingSetPercenta
             bestTree = {"percentage":valid/total, "nodes":nodes, "accuracy":accuracy}
         print(f"({run+1} / {runs}) Valid: {valid}/{total} ({round((valid/total)*100,2)}%)")
     elapsedTime = time.time() - startTime
-    print(f"Best result of {runs} runs in {round(elapsedTime, 2)}s was {round(bestTree['percentage']*100,2)}% valid with an efficiency of {round(bestTree['accuracy'],2)} and with {len(bestTree['nodes'])} nodes, rendered below:")
+    print(f"Best result of {runs} runs in {round(elapsedTime, 2)}s was {round(bestTree['percentage']*100,2)}% valid with an efficiency of {round(bestTree['accuracy'],2)}% and with {len(bestTree['nodes'])} nodes, rendered below:")
     renderNodes(bestTree["nodes"][""], 1, checkClass)
 
 
@@ -224,4 +224,4 @@ if __name__ == "__main__":
     checkClass = list(loadedDataset[0].keys())[-1]
     #performanceTest(dataset=loadedDataset, checkClass=checkClass, trainingSetPercentage=0.8)
     # for i in range(0, 100):
-    testFindBestTree(dataset=loadedDataset, checkClass=checkClass, trainingSetPercentage=0.025, runs=1500)
+    testFindBestTree(dataset=loadedDataset, checkClass=checkClass, trainingSetPercentage=0.04, runs=10000)
