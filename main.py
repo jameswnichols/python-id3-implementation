@@ -29,22 +29,30 @@ def calculateEntropyFromDataset(parameter : str, dataset : list[dict]):
     #Calculate the entropy of the value.
     return -sum([prob * math.log2(prob) for prob in probabilities.values()])
 
-def calculateClassValueEntropyFromDataset(paramClass : str, dataset : list[dict], checkClass : str, checkClassValues : list[str]):
-    #Get all unique values for the parameter class.
-    paramValues = list(dict.fromkeys([row[paramClass] for row in dataset]))
-    #Construct a dictionary where each parameter class value has an inner dictionary with all of the root class' values and a count.
-    paramProb = {paramValue : {classValue : 0 for classValue in checkClassValues} for paramValue in paramValues}
+def calculateClassValueEntropyFromDataset(paramClass : str, dataset : list[dict], checkClass : str):
+    #Initialise a dictionary where each parameter class value has an inner dictionary with all of the root class' value counts.
+    #E.g. for "boot_space": {"small":{"vgood":0,"good":4,"acc":132,"unacc":375},"med":...}
+    paramRootValues = {}
     for row in dataset:
-        #Increase the count of the parameter class' root class value.
-        paramProb[row[paramClass]][row[checkClass]] += 1
+
+        #Increase the count of the parameter class' root class value, or create a new entry if it doesn't exist.
+        if row[paramClass] not in paramRootValues:
+            paramRootValues[row[paramClass]] = {}
+
+        if row[checkClass] not in paramRootValues[row[paramClass]]:
+            paramRootValues[row[paramClass]][row[checkClass]] = 1
+        else:
+            paramRootValues[row[paramClass]][row[checkClass]] += 1
+        
     paramEntropys = {}
 
-    for paramVal, checkResults in paramProb.items():
+    for paramValue, rootValuesDict in paramRootValues.items():
+        rootValues = list(rootValuesDict.values())
         #Calculate the entropy of each of the parameter class' values.
-        valTotal = sum(crV for crV in list(checkResults.values()))
-        valProbs = [crV / valTotal for crV in list(checkResults.values())]
+        valTotal = sum([crV for crV in rootValues])
+        valProbs = [crV / valTotal for crV in rootValues]
         paramEntropy = -sum([prob * math.log2(prob) if prob else 0 for prob in valProbs])
-        paramEntropys[paramVal] = {"entropy":paramEntropy,"total":valTotal,"results":checkResults}
+        paramEntropys[paramValue] = {"entropy":paramEntropy,"total":valTotal,"results":rootValuesDict}
     return paramEntropys
 
 def calculateClassInformationGainFromDataset(classEntropys : dict, dataset : list[dict], checkClassEntropy : float):
@@ -52,11 +60,13 @@ def calculateClassInformationGainFromDataset(classEntropys : dict, dataset : lis
 
 def filterDataset(dataset : list[dict], path : dict):
     newDataset = []
+    pathItems = path.items()
     for row in dataset:
+        rowItems = row.items()
         #If the row contains all the values in the path e.g. path={"buying_price":"high","boot_space":"small",...} then keep it.
-        if path.items() <= row.items():
+        if pathItems <= rowItems:
             #Remove the path from the row.
-            newRow = dict(row.items() - path.items())
+            newRow = dict(rowItems - pathItems)
             newDataset.append(newRow)
     return newDataset
 
@@ -107,7 +117,7 @@ def getKeyFromPath(path : list[dict]):
     return "/".join(nodeClassPathList)
 
 def getNodesFromDataset(dataset : list[dict], classToCheck : str):
-    classToCheckValues = getPossibleClassValuesFromDataset(classToCheck, dataset)
+    #classToCheckValues = getPossibleClassValuesFromDataset(classToCheck, dataset)
 
     rootNode = Node("Root")
     pathsToCheck = [(rootNode, {})]
@@ -139,7 +149,7 @@ def getNodesFromDataset(dataset : list[dict], classToCheck : str):
 
         bestFittingClass = {"infoGain":-100.0}
         for dClass in classesToCheck:
-            classEntropys = calculateClassValueEntropyFromDataset(dClass, currentDataset, classToCheck, classToCheckValues)
+            classEntropys = calculateClassValueEntropyFromDataset(dClass, currentDataset, classToCheck)
             classInformationGain = calculateClassInformationGainFromDataset(classEntropys, currentDataset, mainClassCheckEntropy)
             if classInformationGain > bestFittingClass["infoGain"]:
                 bestFittingClass = {"class":dClass,"infoGain":classInformationGain,"entropys":classEntropys}
@@ -229,4 +239,4 @@ if __name__ == "__main__":
     #nodes = getNodesFromDataset(dataset=loadedDataset, classToCheck=checkClass)
     #performanceTest(dataset=loadedDataset, checkClass=checkClass, trainingSetPercentage=0.8)
     # for i in range(0, 100):
-    testFindBestTree(dataset=loadedDataset, checkClass=checkClass, runs=5000, trainingSetPercentage=0.04)
+    testFindBestTree(dataset=loadedDataset, checkClass=checkClass, runs=100, trainingSetPercentage=None)
