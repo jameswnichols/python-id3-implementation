@@ -183,17 +183,19 @@ def validateDataset(dataset : list[dict], nodes : dict[Node], checkClass : str):
 
     return valid, len(dataset)
 
-def splitDataset(dataset : list[dict], trainingPercentage : float, targetClass : str):
+def splitDataset(dataset : list[dict], targetClass : str, trainingPercentage : float = None):
+    shuffleDataset = [x for x in dataset]
+    random.shuffle(shuffleDataset)
+    if not trainingPercentage:
+        return shuffleDataset, dataset
     targetClassColumn = [row[targetClass] for row in dataset]
     targetClassValues = list(dict.fromkeys(targetClassColumn))
     targetClassValueRatios = {targetClassValue : targetClassColumn.count(targetClassValue)/len(dataset) for targetClassValue in targetClassValues}
     amountOfEach = {targetClassValue : math.floor(targetClassValueRatio * len(dataset) * trainingPercentage) for targetClassValue, targetClassValueRatio in targetClassValueRatios.items()}
     currentOfEach = {targetClassValue : 0 for targetClassValue in targetClassValues}
-    shuffledDataset = copy.deepcopy(dataset)
-    random.shuffle(shuffledDataset)
     trainingDataset = []
     testingDataset = []
-    for row in shuffledDataset:
+    for row in shuffleDataset:
         rowTargetClass = row[targetClass]
         if currentOfEach[rowTargetClass] < amountOfEach[rowTargetClass]:
             trainingDataset.append(row)
@@ -203,11 +205,11 @@ def splitDataset(dataset : list[dict], trainingPercentage : float, targetClass :
 
     return trainingDataset, testingDataset
 
-def testFindBestTree(dataset : list[dict], checkClass : str, trainingSetPercentage : float = 0.8, runs : int = 1):
+def testFindBestTree(dataset : list[dict], checkClass : str, trainingSetPercentage : float = None, runs : int = 1):
     startTime = time.time()
     bestTree = {"percentage":0, "nodes":{}, "accuracy":-100}
     for run in range(runs):
-        trainingDataset, testingDataset = splitDataset(dataset, trainingSetPercentage, checkClass)
+        trainingDataset, testingDataset = splitDataset(dataset, checkClass, trainingSetPercentage)
         nodes = getNodesFromDataset(trainingDataset, checkClass)
         valid, total = validateDataset(testingDataset, nodes, checkClass)
         accuracy = ((valid/total) * 100) / math.log2(len(nodes))
@@ -215,7 +217,7 @@ def testFindBestTree(dataset : list[dict], checkClass : str, trainingSetPercenta
             bestTree = {"percentage":valid/total, "nodes":nodes, "accuracy":accuracy}
         print(f"({run+1} / {runs}) Valid: {valid}/{total} ({round((valid/total)*100,2)}%)")
     elapsedTime = time.time() - startTime
-    print(f"Best result of {runs} runs in {round(elapsedTime, 2)}s was {round(bestTree['percentage']*100,2)}% valid with an efficiency of {round(bestTree['accuracy'],2)}% and with {len(bestTree['nodes'])} nodes, rendered below:")
+    print(f"Best result of {runs} runs in {round(elapsedTime, 2)}s with {trainingSetPercentage*100}% of the dataset was {round(bestTree['percentage']*100,2)}% valid with an efficiency of {round(bestTree['accuracy'],2)}% and with {len(bestTree['nodes'])} nodes, rendered below:")
     renderNodes(bestTree["nodes"][""], 1, checkClass)
 
 
@@ -224,4 +226,4 @@ if __name__ == "__main__":
     checkClass = list(loadedDataset[0].keys())[-1]
     #performanceTest(dataset=loadedDataset, checkClass=checkClass, trainingSetPercentage=0.8)
     # for i in range(0, 100):
-    testFindBestTree(dataset=loadedDataset, checkClass=checkClass, trainingSetPercentage=0.04, runs=10000)
+    testFindBestTree(dataset=loadedDataset, checkClass=checkClass, runs=3000, trainingSetPercentage=0.0345)
