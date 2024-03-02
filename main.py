@@ -1,5 +1,4 @@
 import math
-import copy
 import pickle
 import time
 import random
@@ -19,7 +18,7 @@ class Node:
 
 def calculateClassValueEntropysFromDataset(paramClasses : list[str], dataset : list[dict], rootClass : str, pathItems : list[tuple[str, str]]):
     #Initialise a dictionary where each parameter class value has an inner dictionary with all of the root class' value counts.
-    #E.g. {"boot_space": {"small":{"vgood":0,"good":4,"acc":132,"unacc":375},"med":...}}
+    #E.g. {"boot_space": {"small":{"vgood":0,"good":4,"acc":132,"unacc":375},"med":...}, "safety" : ...}
 
     #Defaultdict calls a function when the key is not found, so lambda is used to create an inner dictionary with a default value of 0.
     paramRootValues = defaultdict(lambda: defaultdict(lambda: defaultdict(int)))
@@ -228,11 +227,11 @@ def testFindBestTree(dataset : list[dict], rootClass : str, rootClassCounts : li
     elapsedTime = time.time() - startTime
     print(f"Best result of {runs} runs in {round(elapsedTime, 2)}s with {round((trainingSetPercentage*100) if trainingSetPercentage else 100, 2)}% of the dataset was {round(bestTree['percentage']*100,2)}% valid with an efficiency of {round(bestTree['efficiency'],2)}% and with {bestTree['totalNodes']} nodes, rendered below:")
     renderNodes(bestTree["rootNode"], 1, rootClass)
-    with open("bestTreeOutput.data", "wb") as f:
-        pickle.dump({"Node":bestTree["rootNode"]}, f)
+    # with open("bestTreeOutput.data", "wb") as f:
+    #     pickle.dump({"Node":bestTree["rootNode"]}, f)
 
 if __name__ == "__main__":
     loadedDataset = extractDatasetFromCSV("courseworkDataset.csv")
     rootClass = list(loadedDataset[0].keys())[-1]
     rootClassCounts = getPossibleClassCountsFromDataset(rootClass, loadedDataset)
-    testFindBestTree(dataset=loadedDataset, rootClass=rootClass, rootClassCounts=rootClassCounts, runs=1, trainingSetPercentage=None)
+    testFindBestTree(dataset=loadedDataset, rootClass=rootClass, rootClassCounts=rootClassCounts, runs=30000, trainingSetPercentage=0.03)
