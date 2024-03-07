@@ -80,7 +80,7 @@ def getLeavesBranchesFromBestClass(bestFittingClass : dict):
                 if rootValueCount > 0:
                     entropyResultValue = rootValue
                     break
-            #Value is used so when validating the dataset, it can relate to a specific value of the root class e.g. "low" -> "quality" = "unacc".
+            #Value is used so when validating the dataset, it can relate to a specific value of the root class e.g. "safety" = "low" -> "quality" = "unacc".
             leaves.append({"value":value,"result":entropyResultValue})
         else:
             #If the entropy isnt 0, then the value is a branch, so dataset will be filtered by the value later on.
@@ -88,13 +88,18 @@ def getLeavesBranchesFromBestClass(bestFittingClass : dict):
     return leaves, expand
 
 def renderNodes(node : Node, indent : int, rootClass : str, parentClass = None, parentClassValue = None):
-    #If is used so that tree can show the previous class value of the node at the current recursion.
+    #Inline if is used so that tree can show the previous class value of the node at the current recursion.
     #E.g. "If Safety = med; Check buying_price:".
     classValueString = f"If {parentClass} = {parentClassValue}; " if parentClassValue and parentClass else ""
     print("  " * (indent - 1) + f"{classValueString}Check {node.Class}:")
+
+    rootClassValuePossibles = defaultdict(list)
     for classValue, result in node.decisions.items():
+        rootClassValuePossibles[result].append(classValue)
+    
+    for result, classValues in rootClassValuePossibles.items():
         #E.g. "If safety = low; quality = unacc".
-        print("  " * (indent) + f"If {node.Class} = {classValue}; {rootClass} = {result}")
+        print("  " * (indent) + f"If {node.Class} = {', '.join(classValues)}; {rootClass} = {result}")
     for pathValue, childNode in node.children.items():
         #Indent is used so that the child nodes are indented under the parent node, looks like "branches".
         renderNodes(childNode, indent + 1, rootClass,node.Class ,pathValue)
@@ -107,7 +112,7 @@ def getResultOfDatasetEntry(row : dict, startingNode : Node):
         nodeToCheck = nodesToCheck.pop(0)
         #Get the value of the node's class in the row e.g. row["safety"] = "low".
         entryValue = row[nodeToCheck.Class]
-        #If the of the node's class is a leaf, then the value of the leaf is predicted result e.g. "safety" = "low" -> "quality" = "unacc".
+        #If the of the node's class is a leaf, then return the value as it's the predicted result e.g. "safety" = "low" -> "quality" = "unacc".
         if entryValue in nodeToCheck.decisions:
             return nodeToCheck.decisions[entryValue]
         #If the node's class is a branch, check that branches' node next e.g. "safety" = "med" -> "buying_price" Node.
@@ -138,10 +143,13 @@ def getNodesFromDataset(dataset : list[dict], classToCheck : str):
         mainClassCheckEntropy = 0
         datasetLength = 0
 
+        #Get classes in the dataset that are not in the path e.g. "buying_price" and "boot_space" and remove root class e.g. "quality".
+        #Set can be used as order of the classes is not important.
         classesInDataset = set(dataset[0].keys() - pathToCheck.keys())
         classesInDataset.remove(classToCheck)
         
-        #By only reading the dataset rows once per while loop iteration, triples the speed of the algorithm.
+        #By only reading the dataset rows once per while loop iteration it significantly increases the speed of the algorithm.
+        #Doesnt necessarily help on a dataset of 1.7k rows, but adds up on larger datasets (tested on 370k rows).
         paramClassEntropys, mainClassCheckEntropy, datasetLength = calculateClassValueEntropysFromDataset(classesInDataset, dataset, classToCheck, pathItems)
 
         bestFittingClass = {"infoGain":-100.0}
@@ -211,10 +219,10 @@ def splitDataset(dataset : list[dict], rootClass : str, rootClassCounts : list[s
     
     amountOfEachClassValue = {}
     currentOfEachClassValue = {}
+    datasetPerValue = (len(dataset) / len(rootClassCounts))
     for rootClassValue, rootClassCount in rootClassCounts.items():
         currentOfEachClassValue[rootClassValue] = 0
-        amountOfEachClassValue[rootClassValue] = math.floor(rootClassCount * trainingPercentage)
-     
+        amountOfEachClassValue[rootClassValue] = math.floor(datasetPerValue * trainingPercentage)
     trainingDataset = []
     testingDataset = []
     for row in shuffleDataset:
@@ -230,16 +238,20 @@ def splitDataset(dataset : list[dict], rootClass : str, rootClassCounts : list[s
 def testFindBestTree(dataset : list[dict], rootClass : str, rootClassCounts : list[dict[str, int]], trainingSetPercentage : float = None, runs : int = 1):
     startTime = time.time()
     bestTree = {"percentage":0, "rootNode":{}, "efficiency":-100}
+    runningPercentageTotal = 0
+    totalPercentageCount = 0
     for run in range(runs):
         trainingDataset, testingDataset = splitDataset(dataset, rootClass , rootClassCounts, trainingSetPercentage)
         totalNodes, rootNode = getNodesFromDataset(trainingDataset, rootClass)
         valid, total = validateDataset(testingDataset, rootNode, rootClass)
-        efficiency = ((valid/total) * 100) / math.log2(totalNodes)
-        if efficiency > bestTree["efficiency"] and valid / total > 0.7:
-            bestTree = {"percentage":valid/total, "rootNode":rootNode, "totalNodes":totalNodes, "efficiency":efficiency}
+        if valid / total > 0.7 and valid / total > bestTree["percentage"]:
+            bestTree = {"percentage":valid/total, "rootNode":rootNode, "totalNodes":totalNodes}
+        runningPercentageTotal += valid / total
+        totalPercentageCount += 1
         print(f"({run+1} / {runs}) Valid: {valid}/{total} ({round((valid/total)*100,2)}%)")
     elapsedTime = time.time() - startTime
-    print(f"Best result of {runs} runs in {round(elapsedTime, 2)}s with {round((trainingSetPercentage*100) if trainingSetPercentage else 100, 2)}% of the dataset was {round(bestTree['percentage']*100,2)}% valid with an efficiency of {round(bestTree['efficiency'],2)}% and with {bestTree['totalNodes']} nodes is rendered below:")
+    averagePercentage = runningPercentageTotal / totalPercentageCount
+    print(f"Best result of {runs} runs in {round(elapsedTime, 2)}s with {round((trainingSetPercentage*100) if trainingSetPercentage else 100, 2)}% of the dataset was {round(bestTree['percentage']*100,2)}% accurate with an average accuracy of {round(averagePercentage*100, 2)}% and with {bestTree['totalNodes']} nodes is rendered below:")
     renderNodes(bestTree["rootNode"], 1, rootClass)
     # with open("bestTreeOutput.data", "wb") as f:
     #     pickle.dump({"Node":bestTree["rootNode"]}, f)
@@ -248,4 +260,4 @@ if __name__ == "__main__":
     loadedDataset = extractDatasetFromCSV("courseworkDataset.csv")
     rootClass = list(loadedDataset[0].keys())[-1]
     rootClassCounts = getPossibleClassCountsFromDataset(rootClass, loadedDataset)
-    testFindBestTree(dataset=loadedDataset, rootClass=rootClass, rootClassCounts=rootClassCounts, runs=1500, trainingSetPercentage=None)
+    testFindBestTree(dataset=loadedDataset, rootClass=rootClass, rootClassCounts=rootClassCounts, runs=10000, trainingSetPercentage=0.5)
