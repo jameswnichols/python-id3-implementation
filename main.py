@@ -152,21 +152,31 @@ def getNodesFromDataset(dataset : list[dict], classToCheck : str):
         #Doesnt necessarily help on a dataset of 1.7k rows, but adds up on larger datasets (tested on 370k rows).
         paramClassEntropys, mainClassCheckEntropy, datasetLength = calculateClassValueEntropysFromDataset(classesInDataset, dataset, classToCheck, pathItems)
 
+        #For each of the classes in the dataset, calculate its information gain and if it is greater than the best fitting class, then set it as the best fitting class.
         bestFittingClass = {"infoGain":-100.0}
         for paramClass, classEntropys in paramClassEntropys.items():
             classInformationGain = calculateClassInformationGainFromDataset(classEntropys, datasetLength, mainClassCheckEntropy)
             if classInformationGain > bestFittingClass["infoGain"]:
                 bestFittingClass = {"class":paramClass,"infoGain":classInformationGain,"entropys":classEntropys}
         
+        #Set the parent node's class to the best fitting class.
+        #This is done as when a node is created, it isn't assigned a class and is instead passed into the function as a parameter.
         parentNode.Class = bestFittingClass["class"]
         classValuesToLeave, classValuesToBranch = getLeavesBranchesFromBestClass(bestFittingClass)
+        #Iterate over each leaf / decision of the tree.
         for classValueLeaf in classValuesToLeave:
+            #Add the decision to the parent node.
+            #If the parent nodees class was "safety", then the decision is "low" -> "quality" = "unacc".
             parentNode.addDecision(classValueLeaf["value"], classValueLeaf["result"])
 
+        #Iterate over each branch of the tree.
         for classValueToBranch in classValuesToBranch:
             totalNodes += 1
             newNode = Node()
+            #Add the branch to the parent node.
+            #If the parent nodees class was "safety", then the branch is "med" -> "buying_price" Node.
             parentNode.addChild(classValueToBranch, newNode)
+            #Copies the current path, and adds the new nodes class to it.
             pathToAdd = pathToCheck.copy()
             pathToAdd[bestFittingClass["class"]] = classValueToBranch
             pathsToCheck.append((newNode, pathToAdd))
@@ -174,6 +184,7 @@ def getNodesFromDataset(dataset : list[dict], classToCheck : str):
     print(" "*len(lastLine),end="\r")
     elapsedTime = time.time() - startTime
     lastLine = f"Time Elapsed: {round(elapsedTime,2)}s // Nodes Created: {totalNodes} // Paths Checked: {valuesChecked} // Percentage Complete: {round((valuesChecked/totalNodes)*100,2)}%"
+    #Using \r means that the previous line is overwritten instead of adding a new one, so that the time elapsed and progress % is updated.
     print(lastLine,end="\r")
 
     print("\n")
@@ -185,7 +196,10 @@ def extractDatasetFromCSV(filename):
     classes = []
     with open(filename, "r") as f:
         fileData = f.readlines()
+    #Classes are the headers of the csv, e.g. ["buying_price", "boot_space", "safety", "quality", ...].
+    #.strip() is used to remove the newlines and any potential whitespace from the row.
     classes = fileData[0].strip().split(",")
+    #The length of the file with the headers removed.
     inputLength = len(fileData[1:])
     lastLine = ""
     startTime = time.time()
@@ -194,6 +208,11 @@ def extractDatasetFromCSV(filename):
         elapsedTime = time.time() - startTime
         lastLine = f"Time Elapsed: {round(elapsedTime,2)}s // Lines Processed: {i+1} / {inputLength} // Percentage Complete: {round((i/inputLength)*100,2)}%"
         print(lastLine,end="\r")
+        #zip creates a list of tuples, where the first value is the header and the second value is the associated value in the row.
+        #E.g. [("buying_price","high"), ("boot_space","small"), ...].
+        #This is then converted to a dictionary, where the first value is the key and the second value is the value.
+        #E.g. {"buying_price":"high", "boot_space":"small", ...}.
+        #This is then added to the dataset.
         dataset.append(dict(zip(classes, line.strip().split(","))))
     print(" "*len(lastLine),end="\r")
     elapsedTime = time.time() - startTime
@@ -205,6 +224,7 @@ def extractDatasetFromCSV(filename):
 def validateDataset(dataset : list[dict], rootNode : dict[Node], rootClass : str):
     valid = 0
     for row in dataset:
+        #Compares the actual rows class to the predicted result of the tree.
         if row[rootClass] == getResultOfDatasetEntry(row, rootNode):
             valid += 1
     return valid, len(dataset)
@@ -219,14 +239,18 @@ def splitDataset(dataset : list[dict], rootClass : str, rootClassCounts : list[s
     
     amountOfEachClassValue = {}
     currentOfEachClassValue = {}
+    #Calculates the amount of each class value in the dataset,
+    #E.g. if there are 4 root class values, then the amount of each class value is (dataset length / 4).
     datasetPerValue = (len(dataset) / len(rootClassCounts))
-    for rootClassValue, rootClassCount in rootClassCounts.items():
+
+    for rootClassValue in rootClassCounts:
         currentOfEachClassValue[rootClassValue] = 0
         amountOfEachClassValue[rootClassValue] = math.floor(datasetPerValue * trainingPercentage)
     trainingDataset = []
     testingDataset = []
     for row in shuffleDataset:
         rowRootClassValue = row[rootClass]
+        #If the current amount of that class value is less than the desired amount, then add it to the training set.
         if currentOfEachClassValue[rowRootClassValue] < amountOfEachClassValue[rowRootClassValue]:
             currentOfEachClassValue[rowRootClassValue] += 1
             trainingDataset.append(row)
@@ -244,7 +268,7 @@ def testFindBestTree(dataset : list[dict], rootClass : str, rootClassCounts : li
         trainingDataset, testingDataset = splitDataset(dataset, rootClass , rootClassCounts, trainingSetPercentage)
         totalNodes, rootNode = getNodesFromDataset(trainingDataset, rootClass)
         valid, total = validateDataset(testingDataset, rootNode, rootClass)
-        if valid / total > 0.7 and valid / total > bestTree["percentage"]:
+        if valid / total > bestTree["percentage"]:
             bestTree = {"percentage":valid/total, "rootNode":rootNode, "totalNodes":totalNodes}
         runningPercentageTotal += valid / total
         totalPercentageCount += 1
@@ -253,6 +277,8 @@ def testFindBestTree(dataset : list[dict], rootClass : str, rootClassCounts : li
     averagePercentage = runningPercentageTotal / totalPercentageCount
     print(f"Best result of {runs} runs in {round(elapsedTime, 2)}s with {round((trainingSetPercentage*100) if trainingSetPercentage else 100, 2)}% of the dataset was {round(bestTree['percentage']*100,2)}% accurate with an average accuracy of {round(averagePercentage*100, 2)}% and with {bestTree['totalNodes']} nodes is rendered below:")
     renderNodes(bestTree["rootNode"], 1, rootClass)
+    #Optionally comment out the line below to save the tree to a file.
+    #Will need to import renderNodes from the main file if used externally.
     # with open("bestTreeOutput.data", "wb") as f:
     #     pickle.dump({"Node":bestTree["rootNode"]}, f)
 
