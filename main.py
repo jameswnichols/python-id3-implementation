@@ -286,4 +286,4 @@ if __name__ == "__main__":
     loadedDataset = extractDatasetFromCSV("courseworkDataset.csv")
     rootClass = list(loadedDataset[0].keys())[-1]
     rootClassCounts = getPossibleClassCountsFromDataset(rootClass, loadedDataset)
-    testFindBestTree(dataset=loadedDataset, rootClass=rootClass, rootClassCounts=rootClassCounts, runs=10000, trainingSetPercentage=0.5)
+    testFindBestTree(dataset=loadedDataset, rootClass=rootClass, rootClassCounts=rootClassCounts, runs=10000, trainingSetPercentage=0.7)
