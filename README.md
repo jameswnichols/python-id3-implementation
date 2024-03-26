@@ -67,4 +67,4 @@ To render the best tree, as shown above.
 `totalNodes` and `percentage` Are the best trees node-count and accuracy respectively.
 
 ### Requirements:
-None.
+Was written in python 3.10 so should work on 3.10+. Any versions before that your mileage may vary.
