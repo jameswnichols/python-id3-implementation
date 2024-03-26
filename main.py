@@ -9,13 +9,13 @@ if __name__ == "__main__":
     decisionTree.extractDatasetFromCSV(filePath="courseworkDataset.csv", fileHasHeaders=True)
 
     #Get the nodes from the dataset, with an optional training percentage.
-    decisionTree.getNodesFromDataset(trainingPercentage=0.4)
+    decisionTree.train(trainingPercentage=0.4)
 
     #Render the tree.
     decisionTree.renderTree()
 
     #Validate the dataset with it's testing dataset.
-    valid, total = decisionTree.validateDataset()
+    valid, total = decisionTree.test()
     print(f"Accuracy was {round(valid/total*100,2)}%")
 
     #Can find the best tree out of n Runs.

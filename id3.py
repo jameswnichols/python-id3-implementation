@@ -149,7 +149,7 @@ class DecisionTree:
         #Fallback in case the tree doesnt have a value for that row. Unacc is 70% of the dataset so it is the default result.
         return "unacc"
 
-    def getNodesFromDataset(self, trainingPercentage : float = None):
+    def train(self, trainingPercentage : float = None):
 
         self.__trainingDataset, self.__testingDataset = self.splitDataset(trainingPercentage)
 
@@ -262,7 +262,7 @@ class DecisionTree:
         print("\n")
         return self.dataset
 
-    def validateDataset(self):
+    def test(self):
         valid = 0
         for row in self.__testingDataset:
             #Compares the actual rows class to the predicted result of the tree.
