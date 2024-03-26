@@ -2,7 +2,7 @@
 A Pure-Python implementation of the ID3 algorithm with reasonable optimisations made, written for my first-year coursework. Can generate a tree based on ~1.7k entries in 20ms and a tree based of ~370k entries in 90 minutes.
 
 ### Usage:
-**An example is in `main.py`**.
+**An example is in `main.py`**
 Start by importing the decision tree using:
 ```python
 from id3 import DecisionTree
