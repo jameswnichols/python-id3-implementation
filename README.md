@@ -3,6 +3,7 @@ A Pure-Python implementation of the ID3 algorithm with reasonable optimisations 
 
 ### Usage:
 **An example is in `main.py`**
+
 Start by importing the decision tree using:
 ```python
 from id3 import DecisionTree
