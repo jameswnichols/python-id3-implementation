@@ -38,10 +38,31 @@ Check Outlook:
     If Windy = False; Play = Yes
 ```
 
-Validate the dataset using:
+Validate the dataset, returning the amount it got correct and the total rows of testing data:
 ```python
 valid, total = tree.test()
 ```
+
+To get the best tree out of `n` runs use:
+```python
+bestTreeResults = tree.findBestTree(trainingSetPercentage=0.4, minimumPercentage=0.7, runs=10)
+```
+Minimum percentage is used when testing the tree, where if the result is lower, the tree is discarded.
+
+`bestTreeResults` is a class with the following attributes:
+```python
+bestTreeResults.rootNode
+```
+Can be used with:
+```python
+tree.renderNode(bestTreeResults.rootNode)
+```
+
+```python
+bestTreeResults.totalNodes
+bestTreeResults.percentage
+```
+Are the best trees node-count and accuracy respectively.
 
 ### Requirements:
 None.
