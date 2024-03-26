@@ -17,13 +17,13 @@ class Node:
     def addDecision(self, classValue, result):
         self.decisions [classValue] = result
 
-class bestTreeResult:
+class BestTreeResult:
     def __init__(self, rootNode, totalNodes, percentage):
         self.rootNode = rootNode
         self.totalNodes = totalNodes
         self.percentage = percentage
 
-class Tree:
+class DecisionTree:
 
     __rootClass = None
     __classes = None
@@ -321,7 +321,7 @@ class Tree:
         if foundBestTree:
             print(f"Best result of {runs} runs in {round(elapsedTime, 2)}s with {round((trainingSetPercentage*100) if trainingSetPercentage else 100, 2)}% of the dataset was {round(bestTree['percentage']*100,2)}% accurate with an average accuracy of {round(averagePercentage*100, 2)}% and with {bestTree['totalNodes']} nodes is rendered below:")
             self.renderTree()
-            return bestTreeResult(bestTree["rootNode"], bestTree["totalNodes"], bestTree["percentage"])
+            return BestTreeResult(bestTree["rootNode"], bestTree["totalNodes"], bestTree["percentage"])
         else:
             print("No tree found with a minimum percentage of accuracy of " + str(round(minimumPercentage*100,2)) + "%")
             return None
