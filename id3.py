@@ -300,7 +300,7 @@ class DecisionTree:
 
         return trainingDataset, testingDataset
 
-    def testFindBestTree(self, trainingSetPercentage : float = None, minimumPercentage : float = 0.0, runs : int = 1):
+    def testFindBest(self, trainingSetPercentage : float = None, minimumPercentage : float = 0.0, runs : int = 1):
         startTime = time.time()
         bestTree = {"percentage":0, "rootNode":{}, "totalNodes":0}
         runningPercentageTotal = 0
