@@ -52,17 +52,16 @@ Minimum percentage is used when testing the tree, where if the result is lower, 
 `bestTreeResults` is a class with the following attributes:
 ```python
 bestTreeResults.rootNode
-```
-Can be used with:
-```python
-tree.renderNode(bestTreeResults.rootNode)
-```
-
-```python
 bestTreeResults.totalNodes
 bestTreeResults.percentage
 ```
-Are the best trees node-count and accuracy respectively.
+`rootNode` Can be used with:
+```python
+tree.renderNode(bestTreeResults.rootNode)
+```
+To render the best tree, as shown above.
+
+`totalNodes` and `percentage` Are the best trees node-count and accuracy respectively.
 
 ### Requirements:
 None.
