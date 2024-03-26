@@ -49,12 +49,14 @@ bestTreeResults = tree.findBestTree(trainingSetPercentage=0.4, minimumPercentage
 ```
 Minimum percentage is used when testing the tree, where if the result is lower, the tree is discarded.
 
-`bestTreeResults` is a class with the following attributes:
+
+`findBestTree` returns the class `BestTreeResults` with the following attributes:
 ```python
-bestTreeResults.rootNode
-bestTreeResults.totalNodes
-bestTreeResults.percentage
+BestTreeResults.rootNode
+BestTreeResults.totalNodes
+BestTreeResults.percentage
 ```
+
 `rootNode` Can be used with:
 ```python
 tree.renderNode(bestTreeResults.rootNode)
