@@ -1,6 +1,6 @@
 import pygame
 from pygame import Vector2
-from main import *
+from id3 import Node
 import pickle
 
 pygame.init()
