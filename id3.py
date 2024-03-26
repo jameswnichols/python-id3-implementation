@@ -109,7 +109,7 @@ class DecisionTree:
                 expand.append(value)
         return leaves, expand
     
-    def renderTree(self):
+    def render(self):
         self.__renderNodes(self.rootNode, 1, self.__rootClass)
 
     def renderNode(self, node : Node):

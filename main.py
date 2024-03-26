@@ -12,7 +12,7 @@ if __name__ == "__main__":
     decisionTree.train(trainingPercentage=0.4)
 
     #Render the tree.
-    decisionTree.renderTree()
+    decisionTree.render()
 
     #Validate the dataset with it's testing dataset.
     valid, total = decisionTree.test()
