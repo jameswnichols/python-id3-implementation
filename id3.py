@@ -222,11 +222,11 @@ class DecisionTree:
         
         return totalNodes, copy.deepcopy(self.rootNode)
 
-    def extractDatasetFromCSV(self, filename:str, fileHasHeaders:bool = False) -> list[dict]:
+    def extractDatasetFromCSV(self, filePath:str, fileHasHeaders:bool = False) -> list[dict]:
         self.dataset = []
         fileData = None
         self.__classes = []
-        with open(filename, "r") as f:
+        with open(filePath, "r") as f:
             fileData = f.readlines()
         
         #Classes are the headers of the csv, e.g. ["buying_price", "boot_space", "safety", "quality", ...].
